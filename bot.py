@@ -1,8 +1,21 @@
 # ============================================================
 # САМООБУЧАЮЩИЙСЯ ТОРГОВЫЙ БОТ С ВИРТУАЛЬНЫМ БАЛАНСОМ $500
 # ============================================================
-
-!pip install pyTelegramBotAPI yfinance pandas numpy matplotlib -q
+import telebot
+from telebot.types import ReplyKeyboardMarkup
+import yfinance as yf
+import time
+import threading
+import csv
+import io
+import json
+import os
+from datetime import datetime
+import pandas as pd
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 import threading
 import time
