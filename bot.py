@@ -1,3 +1,24 @@
+import telebot
+from telebot.types import ReplyKeyboardMarkup
+import yfinance as yf
+import time
+import threading
+import csv
+import io
+import json
+import os
+from datetime import datetime
+import pandas as pd
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+# Токен из переменных окружения Railway
+TOKEN = os.environ.get("TOKEN")
+if not TOKEN:
+    raise ValueError("Токен не найден! Добавьте переменную TOKEN в Railway")
+bot = telebot.TeleBot(TOKEN)
 import os
 import telebot
 from telebot.types import ReplyKeyboardMarkup
