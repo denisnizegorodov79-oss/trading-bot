@@ -107,12 +107,12 @@ class Config:
     CIRCUIT_BREAKER_HOURS: int = 24
     MAX_DAILY_TRADES: int = 10
 
-    # Параметры ATR (Average True Range)
+    # Параметры ATR
     ATR_PERIOD: int = 14
     ATR_MULTIPLIER_SL: float = 2.0
     ATR_MULTIPLIER_TP: float = 3.0
 
-    # Order Flow Imbalance (OFI)
+    # Order Flow Imbalance
     OFI_DEPTH_LEVELS: int = 10
 
     # Детекция фаз рынка
