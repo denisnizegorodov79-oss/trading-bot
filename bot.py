@@ -1,3 +1,4 @@
+import os
 import telebot
 from telebot.types import ReplyKeyboardMarkup
 import yfinance as yf
@@ -14,7 +15,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-TOKEN = "8948879603:AAHGLkpJQ2kGPshJ8VxuHcLidZGLKEsSo2w"
+TOKEN = "8948879603:TOKEN = os.environ.get("TOKEN")"
 bot = telebot.TeleBot(TOKEN)
 
 INITIAL_BALANCE = 500.0
