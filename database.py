@@ -2,8 +2,9 @@ import asyncpg
 from config import config
 
 class Database:
+class Database:
     def __init__(self):
-        self.pool = None
+    self.pool = None
 
     async def connect(self):
         self.pool = await asyncpg.create_pool(config.DATABASE_URL)
@@ -12,7 +13,7 @@ class Database:
 
     async def create_tables(self):
         async with self.pool.acquire() as conn:
-            await conn.execute(f"""
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS {config.DB_TABLE_TRADES} (
                     id SERIAL PRIMARY KEY,
                     trade_id INTEGER NOT NULL,
