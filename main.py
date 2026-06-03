@@ -1,55 +1,126 @@
+from __future__ import annotations
+
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-from config import config
+from aiogram import Bot
+from aiogram import Dispatcher
+from aiogram.types import BotCommand
 
-logging.basicConfig(level=logging.INFO)
+from config import (
+    LOG_FORMAT,
+    LOG_LEVEL,
+    TELEGRAM_TOKEN,
+    validate_environment,
+)
+from database import (
+    create_database,
+    health_check,
+)
 
-bot = Bot(token=config.TELEGRAM_TOKEN)
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=LOG_FORMAT,
+)
+
+logger = logging.getLogger(__name__)
+
+
+bot = Bot(
+    token=TELEGRAM_TOKEN,
+)
+
 dp = Dispatcher()
 
-def main_keyboard():
-    buttons = [
-        [KeyboardButton(text="📊 Анализ")],
-        [KeyboardButton(text="🚀 Демо-Торговля")],
-        [KeyboardButton(text="🧠 Самообучение")],
-        [KeyboardButton(text="⚙️ Настройки")]
+
+async def set_bot_commands() -> None:
+    """
+    Установка команд Telegram.
+    """
+
+    commands = [
+        BotCommand(
+            command="start",
+            description="Запустить бота",
+        ),
+        BotCommand(
+            command="analysis",
+            description="Анализ рынка",
+        ),
+        BotCommand(
+            command="demo",
+            description="Демо торговля",
+        ),
+        BotCommand(
+            command="learning",
+            description="Самообучение",
+        ),
+        BotCommand(
+            command="settings",
+            description="Настройки",
+        ),
     ]
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
-@dp.message(Command("start"))
-async def start_command(message: types.Message):
-    await message.answer(
-        "🤖 *ИИ-Трейдинг Бот*\n\n"
-        "▪️ Анализ рынка через DeepSeek-R1\n"
-        "▪️ Демо-торговля с балансом $500\n"
-        "▪️ Самообучение на ошибках\n\n"
-        "📌 *Выберите действие в меню ниже*",
-        parse_mode="Markdown",
-        reply_markup=main_keyboard()
-    )
+    await bot.set_my_commands(commands)
 
-@dp.message(lambda msg: msg.text == "📊 Анализ")
-async def analysis(message: types.Message):
-    await message.answer("📊 *Анализ рынка*\n\nЗагрузка данных...", parse_mode="Markdown")
 
-@dp.message(lambda msg: msg.text == "🚀 Демо-Торговля")
-async def demo_trading(message: types.Message):
-    await message.answer("🚀 *Демо-Торговля*\n\nБаланс: $500\nСделок: 0", parse_mode="Markdown")
+async def startup() -> None:
+    """
+    Действия при запуске.
+    """
 
-@dp.message(lambda msg: msg.text == "🧠 Самообучение")
-async def learning(message: types.Message):
-    await message.answer("🧠 *Самообучение*\n\nОшибок в базе: 0", parse_mode="Markdown")
+    logger.info("Starting AI Trading Bot...")
 
-@dp.message(lambda msg: msg.text == "⚙️ Настройки")
-async def settings(message: types.Message):
-    await message.answer("⚙️ *Настройки*\n\nРиск на сделку: 1%\nМакс сделок в день: 10", parse_mode="Markdown")
+    validate_environment()
 
-async def main():
-    await dp.start_polling(bot)
+    logger.info("Environment validation passed.")
+
+    await create_database()
+
+    logger.info("Database tables initialized.")
+
+    database_ok = await health_check()
+
+    if not database_ok:
+        raise ConnectionError(
+            "PostgreSQL connection failed."
+        )
+
+    logger.info("Database connection successful.")
+
+    await set_bot_commands()
+
+    logger.info("Telegram commands registered.")
+
+
+async def shutdown() -> None:
+    """
+    Корректное завершение работы.
+    """
+
+    logger.info("Stopping AI Trading Bot...")
+
+    await bot.session.close()
+
+    logger.info("Bot stopped.")
+
+
+async def main() -> None:
+    """
+    Точка входа.
+    """
+
+    try:
+        await startup()
+
+        logger.info("Bot polling started.")
+
+        await dp.start_polling(bot)
+
+    finally:
+        await shutdown()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
