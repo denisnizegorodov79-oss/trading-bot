@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
 
 from config import (
     DATABASE_URL,
@@ -17,20 +16,14 @@ from config import (
     DB_POOL_TIMEOUT,
 )
 
-# Импорт моделей для регистрации в SQLAlchemy metadata
+from models.base import Base
 from models.trade import Trade
 from models.historical_error import HistoricalError
 
 
 def build_database_url() -> str:
     """
-    Railway обычно выдает DATABASE_URL в формате:
-
-    postgres://user:password@host:port/database
-
-    SQLAlchemy Async требует:
-
-    postgresql+asyncpg://user:password@host:port/database
+    Преобразование DATABASE_URL для SQLAlchemy Async.
     """
 
     if DATABASE_URL.startswith("postgresql+asyncpg://"):
@@ -74,14 +67,6 @@ async_session_factory = async_sessionmaker(
 )
 
 
-class Base(DeclarativeBase):
-    """
-    Базовый класс для всех ORM-моделей проекта.
-    """
-
-    pass
-
-
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -115,8 +100,8 @@ async def create_database() -> None:
 
 async def drop_database() -> None:
     """
-    Полное удаление таблиц.
-    Использовать только при разработке.
+    Полное удаление таблиц проекта.
+    Использовать только во время разработки.
     """
 
     async with engine.begin() as connection:
