@@ -17,14 +17,20 @@ from config import (
     DB_POOL_TIMEOUT,
 )
 
+# Импорт моделей для регистрации в SQLAlchemy metadata
+from models.trade import Trade
+from models.historical_error import HistoricalError
+
 
 def build_database_url() -> str:
     """
     Railway обычно выдает DATABASE_URL в формате:
-    postgres://
 
-    SQLAlchemy async требует:
-    postgresql+asyncpg://
+    postgres://user:password@host:port/database
+
+    SQLAlchemy Async требует:
+
+    postgresql+asyncpg://user:password@host:port/database
     """
 
     if DATABASE_URL.startswith("postgresql+asyncpg://"):
@@ -70,7 +76,7 @@ async_session_factory = async_sessionmaker(
 
 class Base(DeclarativeBase):
     """
-    Базовый класс для всех моделей проекта.
+    Базовый класс для всех ORM-моделей проекта.
     """
 
     pass
@@ -79,7 +85,7 @@ class Base(DeclarativeBase):
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Асинхронная сессия БД.
+    Асинхронная сессия PostgreSQL.
     """
 
     session = async_session_factory()
@@ -98,8 +104,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def create_database() -> None:
     """
-    Создает таблицы проекта.
-    Вызывается при старте приложения.
+    Создание всех таблиц проекта.
     """
 
     async with engine.begin() as connection:
@@ -111,7 +116,7 @@ async def create_database() -> None:
 async def drop_database() -> None:
     """
     Полное удаление таблиц.
-    Использовать только для разработки.
+    Использовать только при разработке.
     """
 
     async with engine.begin() as connection:
@@ -122,7 +127,7 @@ async def drop_database() -> None:
 
 async def health_check() -> bool:
     """
-    Проверка соединения с PostgreSQL.
+    Проверка подключения к PostgreSQL.
     """
 
     try:
