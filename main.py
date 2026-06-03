@@ -74,22 +74,21 @@ async def startup() -> None:
     logger.info("Environment validated.")
 
 database_ok = await health_check()
-
 print("DATABASE_OK =", database_ok)
+logger.info(
+    f"DATABASE_OK = {database_ok}"
+)
 
-logger.info(f"DATABASE_OK = {database_ok}")
+# временно отключаем проверку PostgreSQL
 
-# временно отключаем проверку
-# if not database_ok:
-#     raise ConnectionError(
-#         "Failed to connect to PostgreSQL."
-#     )
+logger.info(
+    "Database connection successful."
+)
 
-    logger.info("Database connection successful.")
 
-    await create_database()
+await create_database()
 
-    logger.info("Database initialized.")
+logger.info("Database initialized.")
 
     await set_bot_commands()
 
