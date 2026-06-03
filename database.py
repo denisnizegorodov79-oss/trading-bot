@@ -46,6 +46,8 @@ def build_database_url() -> str:
     return DATABASE_URL
 
 
+DATABASE_CONNECTION_URL = build_database_url()
+
 print("DATABASE_CONNECTION_URL =", repr(DATABASE_CONNECTION_URL))
 
 
@@ -58,7 +60,6 @@ engine = create_async_engine(
     max_overflow=DB_MAX_OVERFLOW,
     pool_timeout=DB_POOL_TIMEOUT,
 )
-
 
 async_session_factory = async_sessionmaker(
     bind=engine,
