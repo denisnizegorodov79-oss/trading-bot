@@ -110,7 +110,7 @@ async def drop_database() -> None:
             Base.metadata.drop_all
         )
 
-
+print("DATABASE.PY VERSION 999")
 async def health_check() -> bool:
     """
     Проверка подключения к PostgreSQL.
