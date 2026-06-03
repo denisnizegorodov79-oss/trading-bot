@@ -9,10 +9,6 @@ load_dotenv()
 
 
 def get_required_env(variable_name: str) -> str:
-    """
-    Получить обязательную переменную окружения.
-    """
-
     value = os.getenv(variable_name)
 
     if value is None or not value.strip():
@@ -29,17 +25,20 @@ def get_required_env(variable_name: str) -> str:
 
 ENVIRONMENT: Final[str] = os.getenv(
     "ENVIRONMENT",
-    "production"
+    "production",
 )
 
-DEBUG: Final[bool] = os.getenv(
-    "DEBUG",
-    "False"
-).lower() == "true"
+DEBUG: Final[bool] = (
+    os.getenv(
+        "DEBUG",
+        "False",
+    ).lower()
+    == "true"
+)
 
 LOG_LEVEL: Final[str] = os.getenv(
     "LOG_LEVEL",
-    "INFO"
+    "INFO",
 ).upper()
 
 LOG_FORMAT: Final[str] = (
@@ -57,30 +56,7 @@ TELEGRAM_TOKEN: Final[str] = get_required_env(
 
 
 # ============================================================
-# TELEGRAM USERBOT (PYROGRAM)
-# ============================================================
-
-TELEGRAM_API_ID: Final[int] = int(
-    get_required_env("TELEGRAM_API_ID")
-)
-
-TELEGRAM_API_HASH: Final[str] = get_required_env(
-    "TELEGRAM_API_HASH"
-)
-
-TELEGRAM_SESSION_NAME: Final[str] = os.getenv(
-    "TELEGRAM_SESSION_NAME",
-    "ai_trading_session"
-)
-
-TELEGRAM_PHONE_NUMBER: Final[str] = os.getenv(
-    "TELEGRAM_PHONE_NUMBER",
-    ""
-)
-
-
-# ============================================================
-# POSTGRESQL / RAILWAY
+# DATABASE
 # ============================================================
 
 DATABASE_URL: Final[str] = get_required_env(
@@ -88,15 +64,24 @@ DATABASE_URL: Final[str] = get_required_env(
 )
 
 DB_POOL_SIZE: Final[int] = int(
-    os.getenv("DB_POOL_SIZE", "10")
+    os.getenv(
+        "DB_POOL_SIZE",
+        "10",
+    )
 )
 
 DB_MAX_OVERFLOW: Final[int] = int(
-    os.getenv("DB_MAX_OVERFLOW", "20")
+    os.getenv(
+        "DB_MAX_OVERFLOW",
+        "20",
+    )
 )
 
 DB_POOL_TIMEOUT: Final[int] = int(
-    os.getenv("DB_POOL_TIMEOUT", "30")
+    os.getenv(
+        "DB_POOL_TIMEOUT",
+        "30",
+    )
 )
 
 
@@ -110,20 +95,26 @@ DEEPSEEK_API_KEY: Final[str] = get_required_env(
 
 DEEPSEEK_BASE_URL: Final[str] = os.getenv(
     "DEEPSEEK_BASE_URL",
-    "https://api.deepseek.com"
+    "https://api.deepseek.com",
 )
 
 DEEPSEEK_MODEL: Final[str] = os.getenv(
     "DEEPSEEK_MODEL",
-    "deepseek-chat"
+    "deepseek-chat",
 )
 
 DEEPSEEK_MAX_TOKENS: Final[int] = int(
-    os.getenv("DEEPSEEK_MAX_TOKENS", "2000")
+    os.getenv(
+        "DEEPSEEK_MAX_TOKENS",
+        "2000",
+    )
 )
 
 DEEPSEEK_TEMPERATURE: Final[float] = float(
-    os.getenv("DEEPSEEK_TEMPERATURE", "0.3")
+    os.getenv(
+        "DEEPSEEK_TEMPERATURE",
+        "0.3",
+    )
 )
 
 
@@ -131,8 +122,9 @@ DEEPSEEK_TEMPERATURE: Final[float] = float(
 # TWITTER / X
 # ============================================================
 
-TWITTER_BEARER_TOKEN: Final[str] = get_required_env(
-    "TWITTER_BEARER_TOKEN"
+TWITTER_BEARER_TOKEN: Final[str] = os.getenv(
+    "TWITTER_BEARER_TOKEN",
+    "",
 )
 
 TWITTER_USER_IDS: Final[dict[str, str]] = {
@@ -157,8 +149,30 @@ TWITTER_WEIGHTS: Final[dict[str, float]] = {
 
 
 # ============================================================
-# TELEGRAM CHANNELS
+# TELEGRAM USERBOT
 # ============================================================
+
+TELEGRAM_API_ID: Final[int] = int(
+    os.getenv(
+        "TELEGRAM_API_ID",
+        "0",
+    )
+)
+
+TELEGRAM_API_HASH: Final[str] = os.getenv(
+    "TELEGRAM_API_HASH",
+    "",
+)
+
+TELEGRAM_PHONE_NUMBER: Final[str] = os.getenv(
+    "TELEGRAM_PHONE_NUMBER",
+    "",
+)
+
+TELEGRAM_SESSION_NAME: Final[str] = os.getenv(
+    "TELEGRAM_SESSION_NAME",
+    "ai_trading_session",
+)
 
 TELEGRAM_CHANNELS: Final[tuple[str, ...]] = (
     "tier10k_ru",
@@ -171,17 +185,19 @@ TELEGRAM_CHANNELS: Final[tuple[str, ...]] = (
 # REDDIT
 # ============================================================
 
-REDDIT_CLIENT_ID: Final[str] = get_required_env(
-    "REDDIT_CLIENT_ID"
+REDDIT_CLIENT_ID: Final[str] = os.getenv(
+    "REDDIT_CLIENT_ID",
+    "",
 )
 
-REDDIT_CLIENT_SECRET: Final[str] = get_required_env(
-    "REDDIT_CLIENT_SECRET"
+REDDIT_CLIENT_SECRET: Final[str] = os.getenv(
+    "REDDIT_CLIENT_SECRET",
+    "",
 )
 
 REDDIT_USER_AGENT: Final[str] = os.getenv(
     "REDDIT_USER_AGENT",
-    "ai_trading_bot/1.0"
+    "ai_trading_bot/1.0",
 )
 
 REDDIT_SUBREDDITS: Final[tuple[str, ...]] = (
@@ -194,8 +210,9 @@ REDDIT_SUBREDDITS: Final[tuple[str, ...]] = (
 # CRYPTOQUANT
 # ============================================================
 
-CRYPTOQUANT_API_KEY: Final[str] = get_required_env(
-    "CRYPTOQUANT_API_KEY"
+CRYPTOQUANT_API_KEY: Final[str] = os.getenv(
+    "CRYPTOQUANT_API_KEY",
+    "",
 )
 
 CRYPTOQUANT_BASE_URL: Final[str] = (
@@ -209,7 +226,7 @@ CRYPTOQUANT_BASE_URL: Final[str] = (
 
 GLASSNODE_API_KEY: Final[str] = os.getenv(
     "GLASSNODE_API_KEY",
-    ""
+    "",
 )
 
 GLASSNODE_BASE_URL: Final[str] = (
@@ -218,28 +235,7 @@ GLASSNODE_BASE_URL: Final[str] = (
 
 
 # ============================================================
-# SEC EDGAR
-# ============================================================
-
-SEC_EDGAR_BASE_URL: Final[str] = (
-    "https://data.sec.gov"
-)
-
-
-# ============================================================
-# INVESTING.COM
-# ============================================================
-
-MACRO_CALENDAR_URL: Final[str] = (
-    "https://www.investing.com/economic-calendar/"
-)
-
-MACRO_HOLD_MINUTES_BEFORE: Final[int] = 10
-MACRO_HOLD_MINUTES_AFTER: Final[int] = 10
-
-
-# ============================================================
-# RSS LISTINGS
+# RSS
 # ============================================================
 
 RSS_FEEDS: Final[dict[str, str]] = {
@@ -251,31 +247,70 @@ RSS_FEEDS: Final[dict[str, str]] = {
 
 
 # ============================================================
+# INVESTING
+# ============================================================
+
+MACRO_CALENDAR_URL: Final[str] = (
+    "https://www.investing.com/economic-calendar/"
+)
+
+MACRO_HOLD_MINUTES_BEFORE: Final[int] = 10
+MACRO_HOLD_MINUTES_AFTER: Final[int] = 10
+
+
+# ============================================================
+# SEC
+# ============================================================
+
+SEC_EDGAR_BASE_URL: Final[str] = (
+    "https://data.sec.gov"
+)
+
+
+# ============================================================
 # EXCHANGES
 # ============================================================
 
 EXCHANGES: Final[dict[str, dict[str, str]]] = {
     "binance": {
-        "api_key": os.getenv("BINANCE_API_KEY", ""),
-        "api_secret": os.getenv("BINANCE_API_SECRET", ""),
+        "api_key": os.getenv(
+            "BINANCE_API_KEY",
+            "",
+        ),
+        "api_secret": os.getenv(
+            "BINANCE_API_SECRET",
+            "",
+        ),
     },
     "bybit": {
-        "api_key": os.getenv("BYBIT_API_KEY", ""),
-        "api_secret": os.getenv("BYBIT_API_SECRET", ""),
+        "api_key": os.getenv(
+            "BYBIT_API_KEY",
+            "",
+        ),
+        "api_secret": os.getenv(
+            "BYBIT_API_SECRET",
+            "",
+        ),
     },
     "okx": {
-        "api_key": os.getenv("OKX_API_KEY", ""),
-        "api_secret": os.getenv("OKX_API_SECRET", ""),
+        "api_key": os.getenv(
+            "OKX_API_KEY",
+            "",
+        ),
+        "api_secret": os.getenv(
+            "OKX_API_SECRET",
+            "",
+        ),
         "api_passphrase": os.getenv(
             "OKX_API_PASSPHRASE",
-            ""
+            "",
         ),
     },
 }
 
 
 # ============================================================
-# TRADING ASSETS
+# ASSETS
 # ============================================================
 
 TRADING_ASSETS: Final[tuple[str, ...]] = (
@@ -327,14 +362,14 @@ OFI_DEPTH_LEVELS: Final[int] = 10
 
 
 # ============================================================
-# MARKET PHASE DETECTOR
+# MARKET PHASE
 # ============================================================
 
 TREND_THRESHOLD: Final[float] = 0.02
 
 
 # ============================================================
-# AI SETTINGS
+# AI
 # ============================================================
 
 MIN_CONFIDENCE_SCORE: Final[int] = 60
@@ -350,7 +385,7 @@ FEEDBACK_LOOP_DAYS: Final[int] = 5
 
 
 # ============================================================
-# DATABASE TABLES
+# TABLES
 # ============================================================
 
 TRADES_TABLE: Final[str] = "trades"
@@ -366,22 +401,11 @@ HISTORICAL_ERRORS_TABLE: Final[str] = (
 
 REQUIRED_ENV_VARS: Final[tuple[str, ...]] = (
     "TELEGRAM_TOKEN",
-    "TELEGRAM_API_ID",
-    "TELEGRAM_API_HASH",
     "DATABASE_URL",
     "DEEPSEEK_API_KEY",
-    "TWITTER_BEARER_TOKEN",
-    "REDDIT_CLIENT_ID",
-    "REDDIT_CLIENT_SECRET",
-    "CRYPTOQUANT_API_KEY",
 )
 
 
 def validate_environment() -> None:
-    """
-    Проверка обязательных переменных окружения.
-    Вызывается из main.py при запуске.
-    """
-
     for variable_name in REQUIRED_ENV_VARS:
         get_required_env(variable_name)
