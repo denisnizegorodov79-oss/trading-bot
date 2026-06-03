@@ -8,15 +8,18 @@ from aiogram import Dispatcher
 from aiogram.types import BotCommand
 
 from config import (
-    LOG_FORMAT,
-    LOG_LEVEL,
     TELEGRAM_TOKEN,
+    LOG_LEVEL,
+    LOG_FORMAT,
     validate_environment,
 )
+
 from database import (
     create_database,
     health_check,
 )
+
+from telegram_bot.handlers import router
 
 
 logging.basicConfig(
@@ -33,16 +36,14 @@ bot = Bot(
 
 dp = Dispatcher()
 
+dp.include_router(router)
+
 
 async def set_bot_commands() -> None:
-    """
-    Установка команд Telegram.
-    """
-
     commands = [
         BotCommand(
             command="start",
-            description="Запустить бота",
+            description="Запуск бота",
         ),
         BotCommand(
             command="analysis",
@@ -66,28 +67,24 @@ async def set_bot_commands() -> None:
 
 
 async def startup() -> None:
-    """
-    Действия при запуске.
-    """
-
     logger.info("Starting AI Trading Bot...")
 
     validate_environment()
 
-    logger.info("Environment validation passed.")
-
-    await create_database()
-
-    logger.info("Database tables initialized.")
+    logger.info("Environment validated.")
 
     database_ok = await health_check()
 
     if not database_ok:
         raise ConnectionError(
-            "PostgreSQL connection failed."
+            "Failed to connect to PostgreSQL."
         )
 
     logger.info("Database connection successful.")
+
+    await create_database()
+
+    logger.info("Database initialized.")
 
     await set_bot_commands()
 
@@ -95,10 +92,6 @@ async def startup() -> None:
 
 
 async def shutdown() -> None:
-    """
-    Корректное завершение работы.
-    """
-
     logger.info("Stopping AI Trading Bot...")
 
     await bot.session.close()
@@ -107,10 +100,6 @@ async def shutdown() -> None:
 
 
 async def main() -> None:
-    """
-    Точка входа.
-    """
-
     try:
         await startup()
 
