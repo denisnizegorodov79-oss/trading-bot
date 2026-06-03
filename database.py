@@ -1,73 +1,145 @@
-import asyncpg
-from config import config
+from __future__ import annotations
 
-class Database:
-    def __init__(self):
-        self.pool = None
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
-    async def connect(self):
-        self.pool = await asyncpg.create_pool(config.DATABASE_URL)
-        await self.create_tables()
-        return self.pool
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
-    async def create_tables(self):
-        async with self.pool.acquire() as conn:
-            await conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS {config.DB_TABLE_TRADES} (
-                    id SERIAL PRIMARY KEY,
-                    trade_id INTEGER NOT NULL,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    asset VARCHAR(20) NOT NULL,
-                    side VARCHAR(10) NOT NULL,
-                    market_snapshot TEXT,
-                    trigger_news TEXT,
-                    status VARCHAR(10) DEFAULT 'OPEN',
-                    pnl DECIMAL(20, 8) DEFAULT 0
-                )
-            """)
-            await conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS {config.DB_TABLE_ERRORS} (
-                    id SERIAL PRIMARY KEY,
-                    error_pattern TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+from config import (
+    DATABASE_URL,
+    DB_MAX_OVERFLOW,
+    DB_POOL_SIZE,
+    DB_POOL_TIMEOUT,
+)
 
-    async def save_trade(self, trade_id: int, asset: str, side: str, market_snapshot: str, trigger_news: str):
-        async with self.pool.acquire() as conn:
-            await conn.execute(f"""
-                INSERT INTO {config.DB_TABLE_TRADES} (trade_id, asset, side, market_snapshot, trigger_news)
-                VALUES ($1, $2, $3, $4, $5)
-            """, trade_id, asset, side, market_snapshot, trigger_news)
 
-    async def update_trade_status(self, trade_id: int, status: str, pnl: float):
-        async with self.pool.acquire() as conn:
-            await conn.execute(f"""
-                UPDATE {config.DB_TABLE_TRADES}
-                SET status = $1, pnl = $2
-                WHERE trade_id = $3
-            """, status, pnl, trade_id)
+def build_database_url() -> str:
+    """
+    Railway обычно выдает DATABASE_URL в формате:
+    postgres://
 
-    async def save_error_pattern(self, error_pattern: str):
-        async with self.pool.acquire() as conn:
-            await conn.execute(f"""
-                INSERT INTO {config.DB_TABLE_ERRORS} (error_pattern)
-                VALUES ($1)
-            """, error_pattern)
+    SQLAlchemy async требует:
+    postgresql+asyncpg://
+    """
 
-    async def get_all_errors(self):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch(f"SELECT error_pattern FROM {config.DB_TABLE_ERRORS}")
+    if DATABASE_URL.startswith("postgresql+asyncpg://"):
+        return DATABASE_URL
 
-    async def get_trades_by_status(self, status: str):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch(f"""
-                SELECT * FROM {config.DB_TABLE_TRADES}
-                WHERE status = $1
-            """, status)
+    if DATABASE_URL.startswith("postgres://"):
+        return DATABASE_URL.replace(
+            "postgres://",
+            "postgresql+asyncpg://",
+            1,
+        )
 
-    async def get_all_trades(self):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch(f"SELECT * FROM {config.DB_TABLE_TRADES} ORDER BY id DESC")
+    if DATABASE_URL.startswith("postgresql://"):
+        return DATABASE_URL.replace(
+            "postgresql://",
+            "postgresql+asyncpg://",
+            1,
+        )
 
-db = Database()
+    return DATABASE_URL
+
+
+DATABASE_CONNECTION_URL = build_database_url()
+
+
+engine = create_async_engine(
+    DATABASE_CONNECTION_URL,
+    echo=False,
+    future=True,
+    pool_pre_ping=True,
+    pool_size=DB_POOL_SIZE,
+    max_overflow=DB_MAX_OVERFLOW,
+    pool_timeout=DB_POOL_TIMEOUT,
+)
+
+
+async_session_factory = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+
+class Base(DeclarativeBase):
+    """
+    Базовый класс для всех моделей проекта.
+    """
+
+    pass
+
+
+@asynccontextmanager
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Асинхронная сессия БД.
+    """
+
+    session = async_session_factory()
+
+    try:
+        yield session
+        await session.commit()
+
+    except Exception:
+        await session.rollback()
+        raise
+
+    finally:
+        await session.close()
+
+
+async def create_database() -> None:
+    """
+    Создает таблицы проекта.
+    Вызывается при старте приложения.
+    """
+
+    async with engine.begin() as connection:
+        await connection.run_sync(
+            Base.metadata.create_all
+        )
+
+
+async def drop_database() -> None:
+    """
+    Полное удаление таблиц.
+    Использовать только для разработки.
+    """
+
+    async with engine.begin() as connection:
+        await connection.run_sync(
+            Base.metadata.drop_all
+        )
+
+
+async def health_check() -> bool:
+    """
+    Проверка соединения с PostgreSQL.
+    """
+
+    try:
+        async with engine.begin() as connection:
+            await connection.exec_driver_sql(
+                "SELECT 1"
+            )
+
+        return True
+
+    except Exception:
+        return False
+
+
+async def dispose_database() -> None:
+    """
+    Корректное закрытие пула соединений.
+    """
+
+    await engine.dispose()
