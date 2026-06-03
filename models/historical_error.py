@@ -10,7 +10,7 @@ from sqlalchemy import Text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
-from database import Base
+from models.base import Base
 
 
 class HistoricalError(Base):
