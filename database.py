@@ -124,7 +124,8 @@ async def health_check() -> bool:
 
         return True
 
-    except Exception:
+    except Exception as e:
+        print("POSTGRES ERROR:", repr(e))
         return False
 
 
