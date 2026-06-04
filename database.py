@@ -19,6 +19,7 @@ from config import (
 from models.base import Base
 from models.trade import Trade
 from models.historical_error import HistoricalError
+from models.user import User
 
 
 def build_database_url() -> str:
