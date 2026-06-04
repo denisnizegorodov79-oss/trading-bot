@@ -9,7 +9,9 @@ from sqlalchemy import select
 from telegram_bot.keyboards import MAIN_MENU_KEYBOARD
 
 from database import get_session
+
 from models.user import User
+from models.trade import Trade
 
 
 router = Router()
@@ -64,9 +66,58 @@ async def analysis_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
 async def demo_trading_handler(message: Message) -> None:
 
-    await message.answer(
-        "💹 Модуль демо-торговли находится в разработке."
-    )
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+
+            await message.answer(
+                "Пользователь не найден."
+            )
+            return
+
+        trades_result = await session.execute(
+            select(Trade).where(
+                Trade.user_id == user.id
+            )
+        )
+
+        trades = trades_result.scalars().all()
+
+        total_trades = len(trades)
+
+        open_trades = len(
+            [
+                trade
+                for trade in trades
+                if trade.status == "OPEN"
+            ]
+        )
+
+        closed_trades = len(
+            [
+                trade
+                for trade in trades
+                if trade.status == "CLOSED"
+            ]
+        )
+
+        text = (
+            "💹 Демо-счет\n\n"
+            f"💰 Баланс: {user.balance} USDT\n"
+            f"📈 Всего сделок: {total_trades}\n"
+            f"🟢 Открытых: {open_trades}\n"
+            f"🔴 Закрытых: {closed_trades}"
+        )
+
+        await message.answer(text)
 
 
 @router.message(lambda message: message.text == "🧠 Самообучение")
