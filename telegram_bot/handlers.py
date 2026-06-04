@@ -20,7 +20,6 @@ router = Router()
 @router.message(CommandStart())
 async def start_handler(message: Message) -> None:
 
-```
 async with get_session() as session:
 
     result = await session.execute(
