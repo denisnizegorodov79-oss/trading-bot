@@ -46,6 +46,18 @@ class Trade(Base):
         nullable=False,
     )
 
+    price: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+    )
+
+    quantity: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+    )
+
     market_snapshot: Mapped[str] = mapped_column(
         Text,
         nullable=False,
@@ -99,6 +111,8 @@ class Trade(Base):
             f"user_id={self.user_id}, "
             f"asset='{self.asset}', "
             f"side='{self.side}', "
+            f"price={self.price}, "
+            f"quantity={self.quantity}, "
             f"status='{self.status}', "
             f"pnl={self.pnl}"
             f")"
