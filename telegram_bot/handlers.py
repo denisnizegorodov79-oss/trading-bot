@@ -4,7 +4,12 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
+from sqlalchemy import select
+
 from telegram_bot.keyboards import MAIN_MENU_KEYBOARD
+
+from database import get_session
+from models.user import User
 
 
 router = Router()
@@ -15,6 +20,26 @@ async def start_handler(message: Message) -> None:
     """
     Обработчик команды /start
     """
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+
+            user = User(
+                telegram_id=message.from_user.id,
+                username=message.from_user.username,
+                first_name=message.from_user.first_name,
+            )
+
+            session.add(user)
 
     welcome_text = (
         "🤖 AI Trading Bot\n\n"
@@ -30,9 +55,6 @@ async def start_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "📊 Анализ")
 async def analysis_handler(message: Message) -> None:
-    """
-    Анализ рынка
-    """
 
     await message.answer(
         "📊 Модуль анализа рынка находится в разработке."
@@ -41,9 +63,6 @@ async def analysis_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
 async def demo_trading_handler(message: Message) -> None:
-    """
-    Демо торговля
-    """
 
     await message.answer(
         "💹 Модуль демо-торговли находится в разработке."
@@ -52,9 +71,6 @@ async def demo_trading_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "🧠 Самообучение")
 async def self_learning_handler(message: Message) -> None:
-    """
-    Самообучение
-    """
 
     await message.answer(
         "🧠 Модуль самообучения находится в разработке."
@@ -63,9 +79,6 @@ async def self_learning_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "⚙️ Настройки")
 async def settings_handler(message: Message) -> None:
-    """
-    Настройки
-    """
 
     await message.answer(
         "⚙️ Модуль настроек находится в разработке."
