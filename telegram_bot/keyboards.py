@@ -1,4 +1,4 @@
-from **future** import annotations
+from __future__ import annotations
 
 from aiogram.types import KeyboardButton
 from aiogram.types import ReplyKeyboardMarkup
