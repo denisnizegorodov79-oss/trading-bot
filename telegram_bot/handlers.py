@@ -1,4 +1,4 @@
-from **future** import annotations
+from __future__ import annotations
 
 from aiogram import Router
 from aiogram.filters import CommandStart
