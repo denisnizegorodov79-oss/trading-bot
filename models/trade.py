@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime
 from sqlalchemy import Float
+from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
@@ -14,19 +15,18 @@ from models.base import Base
 
 
 class Trade(Base):
-    """
-    Таблица всех торговых решений бота.
-
-    Хранит полный контекст рынка перед открытием позиции
-    и результат сделки для дальнейшего самообучения.
-    """
-
     __tablename__ = "trades"
 
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         autoincrement=True,
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
     )
 
     timestamp: Mapped[datetime] = mapped_column(
@@ -96,6 +96,7 @@ class Trade(Base):
         return (
             f"Trade("
             f"id={self.id}, "
+            f"user_id={self.user_id}, "
             f"asset='{self.asset}', "
             f"side='{self.side}', "
             f"status='{self.status}', "
