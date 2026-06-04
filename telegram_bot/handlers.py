@@ -77,6 +77,32 @@ async def demo_trading_handler(message: Message) -> None:
         user = result.scalar_one_or_none()
 
         if user is None:
+            await message.answer(
+                "Пользователь не найден."
+            )
+            return
+
+        text = (
+            "💹 Демо-счет\n\n"
+            f"💰 Баланс: {user.balance} USDT\n"
+            f"🆔 Пользователь: {user.first_name}\n\n"
+            "Демо-торговля готова к работе."
+        )
+
+        await message.answer(text)
+async def demo_trading_handler(message: Message) -> None:
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
 
             await message.answer(
                 "Пользователь не найден."
