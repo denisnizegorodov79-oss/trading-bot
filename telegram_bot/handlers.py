@@ -12,8 +12,9 @@ from telegram_bot.keyboards import (
 )
 
 from database import get_session
-from models.user import User
 
+from models.user import User
+from models.trade import Trade
 router = Router()
 
 
@@ -88,8 +89,58 @@ async def demo_trading_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "📈 Купить BTC")
 async def buy_btc_handler(message: Message) -> None:
 
+    BTC_PRICE = 100000
+    BUY_AMOUNT_USDT = 1000
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            await message.answer(
+                "Пользователь не найден."
+            )
+            return
+
+        if user.balance < BUY_AMOUNT_USDT:
+            await message.answer(
+                "❌ Недостаточно средств."
+            )
+            return
+
+        btc_amount = BUY_AMOUNT_USDT / BTC_PRICE
+
+        user.balance -= BUY_AMOUNT_USDT
+
+        trade = Trade(
+            user_id=user.id,
+            asset="BTC",
+            side="BUY",
+            price=BTC_PRICE,
+            quantity=btc_amount,
+            market_snapshot="Demo BTC purchase",
+            trigger_news=None,
+            status="OPEN",
+            pnl=0.0,
+            confidence_score=90,
+            stop_loss_pct=5.0,
+            take_profit_pct=10.0,
+            rationale="Demo purchase",
+        )
+
+        session.add(trade)
+
     await message.answer(
-        "📈 Покупка BTC будет добавлена на следующем этапе."
+        f"✅ BTC куплен\n\n"
+        f"Цена: {BTC_PRICE} USDT\n"
+        f"Количество BTC: {btc_amount:.8f}\n"
+        f"Новый баланс: {user.balance:.2f} USDT"
     )
 
 
