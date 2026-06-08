@@ -184,6 +184,61 @@ async def sell_btc_handler(message: Message) -> None:
             return
 
         sell_amount = trade.quantity * BTC_PRICE
+        buy_amount = trade.quantity * trade.price
+        pnl = sell_amount - buy_amount
+
+        user.balance += sell_amount
+
+        trade.status = "CLOSED"
+        trade.pnl = pnl
+
+    pnl_icon = "🟢" if pnl >= 0 else "🔴"
+
+    await message.answer(
+        f"✅ BTC продан\n\n"
+        f"Цена покупки: {trade.price:.2f} USDT\n"
+        f"Цена продажи: {BTC_PRICE:.2f} USDT\n"
+        f"Количество: {trade.quantity:.8f} BTC\n"
+        f"Получено: {sell_amount:.2f} USDT\n"
+        f"{pnl_icon} PnL: {pnl:.2f} USDT\n\n"
+        f"Баланс: {user.balance:.2f} USDT"
+    )
+
+    BTC_PRICE = await get_btc_price()
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            await message.answer(
+                "Пользователь не найден."
+            )
+            return
+
+        result = await session.execute(
+            select(Trade).where(
+                Trade.user_id == user.id,
+                Trade.asset == "BTC",
+                Trade.status == "OPEN"
+            )
+        )
+
+        trade = result.scalars().first()
+
+        if trade is None:
+            await message.answer(
+                "❌ Открытых сделок BTC нет."
+            )
+            return
+
+        sell_amount = trade.quantity * BTC_PRICE
 
         user.balance += sell_amount
 
