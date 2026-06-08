@@ -62,13 +62,17 @@ async def analysis_handler(message: Message) -> None:
 
     text = (
         "📊 Анализ BTC/USDT\n\n"
-        f"💰 Текущая цена: {analysis['last_price']:.2f} USDT\n"
+        f"💰 Цена: {analysis['last_price']:.2f} USDT\n"
         f"📈 Изменение 24ч: {analysis['change_24h']:.2f}%\n"
         f"🔼 Максимум 24ч: {analysis['high_24h']:.2f} USDT\n"
         f"🔽 Минимум 24ч: {analysis['low_24h']:.2f} USDT\n"
         f"📊 Объём 24ч: {analysis['volume_24h']:.2f} USDT\n\n"
-        f"Тренд: {analysis['trend']}\n"
-        f"Рекомендация: {analysis['recommendation']}"
+        f"RSI: {analysis['rsi']:.2f}\n"
+        f"EMA20: {analysis['ema20']:.2f}\n"
+        f"EMA50: {analysis['ema50']:.2f}\n\n"
+        f"Сигнал: {analysis['signal']}\n"
+        f"Уверенность: {analysis['confidence']}%\n\n"
+        f"Рекомендация:\n{analysis['recommendation']}"
     )
 
     await message.answer(text)
