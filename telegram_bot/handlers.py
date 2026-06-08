@@ -109,6 +109,78 @@ async def demo_trading_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "📈 Купить BTC")
 async def buy_btc_handler(message: Message) -> None:
 
+    analysis = await get_btc_market_analysis()
+
+    BTC_PRICE = analysis["last_price"]
+    BUY_AMOUNT_USDT = 1000
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            await message.answer(
+                "Пользователь не найден."
+            )
+            return
+
+        if user.balance < BUY_AMOUNT_USDT:
+            await message.answer(
+                "❌ Недостаточно средств."
+            )
+            return
+
+        btc_amount = BUY_AMOUNT_USDT / BTC_PRICE
+
+        user.balance -= BUY_AMOUNT_USDT
+
+        market_snapshot = (
+            f"price={analysis['last_price']:.2f}; "
+            f"change_24h={analysis['change_24h']:.2f}; "
+            f"rsi={analysis['rsi']:.2f}; "
+            f"ema20={analysis['ema20']:.2f}; "
+            f"ema50={analysis['ema50']:.2f}; "
+            f"signal={analysis['signal']}; "
+            f"confidence={analysis['confidence']}"
+        )
+
+        trade = Trade(
+            user_id=user.id,
+            asset="BTC",
+            side="BUY",
+            price=BTC_PRICE,
+            quantity=btc_amount,
+            market_snapshot=market_snapshot,
+            trigger_news=None,
+            status="OPEN",
+            pnl=0.0,
+            confidence_score=analysis["confidence"],
+            stop_loss_pct=5.0,
+            take_profit_pct=10.0,
+            rationale=analysis["recommendation"],
+        )
+
+        session.add(trade)
+
+    await message.answer(
+        f"✅ BTC куплен\n\n"
+        f"Цена: {BTC_PRICE:.2f} USDT\n"
+        f"Количество BTC: {btc_amount:.8f}\n"
+        f"Новый баланс: {user.balance:.2f} USDT\n\n"
+        f"📊 Сигнал: {analysis['signal']}\n"
+        f"RSI: {analysis['rsi']:.2f}\n"
+        f"EMA20: {analysis['ema20']:.2f}\n"
+        f"EMA50: {analysis['ema50']:.2f}\n"
+        f"Уверенность: {analysis['confidence']}%\n\n"
+        f"Причина:\n{analysis['recommendation']}"
+    )
+
     BTC_PRICE = await get_btc_price()
     BUY_AMOUNT_USDT = 1000
 
