@@ -155,9 +155,47 @@ async def sell_btc_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "📋 Мои сделки")
 async def trades_handler(message: Message) -> None:
 
-    await message.answer(
-        "📋 У вас пока нет сделок."
-    )
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            await message.answer("Пользователь не найден.")
+            return
+
+        result = await session.execute(
+            select(Trade).where(
+                Trade.user_id == user.id
+            )
+        )
+
+        trades = result.scalars().all()
+
+        if not trades:
+            await message.answer(
+                "📋 У вас пока нет сделок."
+            )
+            return
+
+        text = "📋 Ваши сделки:\n\n"
+
+        for trade in trades[-10:]:
+
+            text += (
+                f"🪙 {trade.asset}\n"
+                f"📈 Тип: {trade.side}\n"
+                f"💰 Цена: {trade.price}\n"
+                f"📦 Количество: {trade.quantity}\n"
+                f"📊 Статус: {trade.status}\n\n"
+            )
+
+        await message.answer(text)
 
 
 @router.message(lambda message: message.text == "⬅️ Главное меню")
