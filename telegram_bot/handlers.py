@@ -58,9 +58,20 @@ async def start_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "📊 Анализ")
 async def analysis_handler(message: Message) -> None:
 
-    await message.answer(
-        "📊 Модуль анализа рынка находится в разработке."
+    analysis = await get_btc_market_analysis()
+
+    text = (
+        "📊 Анализ BTC/USDT\n\n"
+        f"💰 Текущая цена: {analysis['last_price']:.2f} USDT\n"
+        f"📈 Изменение 24ч: {analysis['change_24h']:.2f}%\n"
+        f"🔼 Максимум 24ч: {analysis['high_24h']:.2f} USDT\n"
+        f"🔽 Минимум 24ч: {analysis['low_24h']:.2f} USDT\n"
+        f"📊 Объём 24ч: {analysis['volume_24h']:.2f} USDT\n\n"
+        f"Тренд: {analysis['trend']}\n"
+        f"Рекомендация: {analysis['recommendation']}"
     )
+
+    await message.answer(text)
 
 
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
