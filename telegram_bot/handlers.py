@@ -1,3 +1,4 @@
+from __future__ import annotations
 from services.market_data import get_btc_price
 from __future__ import annotations
 
@@ -90,7 +91,7 @@ async def demo_trading_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "📈 Купить BTC")
 async def buy_btc_handler(message: Message) -> None:
 
-BTC_PRICE = await get_btc_price()
+    BTC_PRICE = await get_btc_price()
     BUY_AMOUNT_USDT = 1000
 
     async with get_session() as session:
@@ -148,7 +149,7 @@ BTC_PRICE = await get_btc_price()
 @router.message(lambda message: message.text == "📉 Продать BTC")
 async def sell_btc_handler(message: Message) -> None:
 
-    BTC_PRICE = 100000
+    BTC_PRICE = await get_btc_price()
 
     async with get_session() as session:
 
