@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from services.market_data import get_btc_price
 
 from aiogram import Router
