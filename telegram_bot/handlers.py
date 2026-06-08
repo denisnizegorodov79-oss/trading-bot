@@ -401,9 +401,83 @@ async def back_to_main_menu(message: Message) -> None:
 @router.message(lambda message: message.text == "🧠 Самообучение")
 async def self_learning_handler(message: Message) -> None:
 
-    await message.answer(
-        "🧠 Модуль самообучения находится в разработке."
-    )
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            await message.answer("Пользователь не найден.")
+            return
+
+        result = await session.execute(
+            select(Trade).where(
+                Trade.user_id == user.id
+            )
+        )
+
+        trades = result.scalars().all()
+
+        if not trades:
+            await message.answer(
+                "🧠 Самообучение\n\n"
+                "Пока нет сделок для анализа.\n"
+                "Сначала совершите несколько демо-сделок."
+            )
+            return
+
+        closed_trades = [
+            trade
+            for trade in trades
+            if trade.status == "CLOSED"
+        ]
+
+        profitable_trades = [
+            trade
+            for trade in closed_trades
+            if trade.pnl > 0
+        ]
+
+        losing_trades = [
+            trade
+            for trade in closed_trades
+            if trade.pnl < 0
+        ]
+
+        total_trades = len(trades)
+        closed_count = len(closed_trades)
+        profitable_count = len(profitable_trades)
+        losing_count = len(losing_trades)
+
+        total_pnl = sum(
+            trade.pnl
+            for trade in closed_trades
+        )
+
+        if closed_count > 0:
+            win_rate = profitable_count / closed_count * 100
+            average_pnl = total_pnl / closed_count
+        else:
+            win_rate = 0
+            average_pnl = 0
+
+        await message.answer(
+            "🧠 Самообучение\n\n"
+            f"📊 Всего сделок: {total_trades}\n"
+            f"✅ Закрытых сделок: {closed_count}\n"
+            f"🟢 Прибыльных: {profitable_count}\n"
+            f"🔴 Убыточных: {losing_count}\n\n"
+            f"🏆 Точность: {win_rate:.2f}%\n"
+            f"💰 Общий PnL: {total_pnl:.2f} USDT\n"
+            f"📈 Средний PnL: {average_pnl:.2f} USDT\n\n"
+            "Это первая версия самообучения: бот уже анализирует "
+            "результаты своих прошлых сделок."
+        )
 
 
 @router.message(lambda message: message.text == "⚙️ Настройки")
