@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from services.market_data import get_btc_price
+from services.market_data import (
+    get_btc_price,
+    get_btc_market_analysis,
+)
 
 from aiogram import Router
 from aiogram.filters import CommandStart
