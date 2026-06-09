@@ -92,7 +92,6 @@ async def analysis_handler(message: Message) -> None:
 
     await message.answer(text)
 
-    await message.answer(text)
 
 
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
