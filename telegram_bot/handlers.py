@@ -20,6 +20,7 @@ from database import get_session
 
 from models.user import User
 from models.trade import Trade
+from models.market_signal import MarketSignal
 router = Router()
 
 
@@ -59,7 +60,19 @@ async def start_handler(message: Message) -> None:
 async def analysis_handler(message: Message) -> None:
 
     analysis = await get_btc_market_analysis()
+async with get_session() as session:
 
+    signal = MarketSignal(
+        asset="BTC",
+        price=analysis["last_price"],
+        rsi=analysis["rsi"],
+        ema20=analysis["ema20"],
+        ema50=analysis["ema50"],
+        signal=analysis["signal"],
+        confidence=analysis["confidence"],
+    )
+
+    session.add(signal)
     text = (
         "📊 Анализ BTC/USDT\n\n"
         f"💰 Цена: {analysis['last_price']:.2f} USDT\n"
