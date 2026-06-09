@@ -20,7 +20,7 @@ from models.base import Base
 from models.trade import Trade
 from models.historical_error import HistoricalError
 from models.user import User
-
+from models.market_signal import MarketSignal
 
 def build_database_url() -> str:
     """
