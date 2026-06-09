@@ -60,19 +60,21 @@ async def start_handler(message: Message) -> None:
 async def analysis_handler(message: Message) -> None:
 
     analysis = await get_btc_market_analysis()
-async with get_session() as session:
 
-    signal = MarketSignal(
-        asset="BTC",
-        price=analysis["last_price"],
-        rsi=analysis["rsi"],
-        ema20=analysis["ema20"],
-        ema50=analysis["ema50"],
-        signal=analysis["signal"],
-        confidence=analysis["confidence"],
-    )
+    async with get_session() as session:
 
-    session.add(signal)
+        signal = MarketSignal(
+            asset="BTC",
+            price=analysis["last_price"],
+            rsi=analysis["rsi"],
+            ema20=analysis["ema20"],
+            ema50=analysis["ema50"],
+            signal=analysis["signal"],
+            confidence=analysis["confidence"],
+        )
+
+        session.add(signal)
+
     text = (
         "📊 Анализ BTC/USDT\n\n"
         f"💰 Цена: {analysis['last_price']:.2f} USDT\n"
@@ -87,6 +89,8 @@ async with get_session() as session:
         f"Уверенность: {analysis['confidence']}%\n\n"
         f"Рекомендация:\n{analysis['recommendation']}"
     )
+
+    await message.answer(text)
 
     await message.answer(text)
 
