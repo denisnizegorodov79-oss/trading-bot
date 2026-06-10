@@ -277,17 +277,25 @@ async def trades_handler(message: Message) -> None:
             await message.answer("📋 У вас пока нет сделок.")
             return
 
-        text = "📋 Ваши сделки:\n\n"
+        text = "📋 Ваши последние сделки:\n\n"
 
         for trade in trades[-10:]:
+            pnl_icon = "🟢" if trade.pnl > 0 else "🔴" if trade.pnl < 0 else "⚪"
+
             text += (
-                f"🪙 {trade.asset}\n"
+                f"#{trade.id} 🪙 {trade.asset}\n"
+                f"📌 Статус: {trade.status}\n"
                 f"📈 Тип: {trade.side}\n"
-                f"💰 Цена: {trade.price:.2f}\n"
-                f"📦 Количество: {trade.quantity:.8f}\n"
-                f"📊 Статус: {trade.status}\n"
-                f"💵 PnL: {trade.pnl:.2f} USDT\n\n"
+                f"💰 Цена входа: {trade.price:.2f} USDT\n"
+                f"📦 Количество: {trade.quantity:.8f} BTC\n"
+                f"{pnl_icon} PnL: {trade.pnl:.2f} USDT\n"
+                f"🤖 Уверенность: {trade.confidence_score}%\n"
             )
+
+            if trade.rationale:
+                text += f"🧠 Причина: {trade.rationale}\n"
+
+            text += "\n"
 
         await message.answer(text)
 
