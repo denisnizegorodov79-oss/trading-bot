@@ -397,7 +397,15 @@ async def self_learning_handler(message: Message) -> None:
             "и накапливает статистику для будущей автоторговли."
         )
 
+@router.message(lambda message: message.text == "🔔 Авто-сигналы")
+async def auto_signals_handler(message: Message) -> None:
 
+    await message.answer(
+        "🔔 Авто-сигналы\n\n"
+        "Скоро бот будет автоматически отслеживать рынок "
+        "и присылать рекомендации по BTC.\n\n"
+        "Пока режим находится в подготовке."
+    )
 @router.message(lambda message: message.text == "⚙️ Настройки")
 async def settings_handler(message: Message) -> None:
 
