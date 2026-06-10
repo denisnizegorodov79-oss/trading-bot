@@ -439,7 +439,7 @@ async def self_learning_handler(message: Message) -> None:
 
         if not trades:
             await message.answer(
-                "🧠 Самообучение\n\n"
+                "🧠 Самообучение 2.0\n\n"
                 "Пока нет сделок для анализа.\n"
                 "Сначала совершите несколько демо-сделок."
             )
@@ -465,6 +465,8 @@ async def self_learning_handler(message: Message) -> None:
 
         total_trades = len(trades)
         closed_count = len(closed_trades)
+        open_count = total_trades - closed_count
+
         profitable_count = len(profitable_trades)
         losing_count = len(losing_trades)
 
@@ -473,24 +475,41 @@ async def self_learning_handler(message: Message) -> None:
             for trade in closed_trades
         )
 
+        total_confidence = sum(
+            trade.confidence_score
+            for trade in trades
+        )
+
+        average_confidence = total_confidence / total_trades
+
         if closed_count > 0:
             win_rate = profitable_count / closed_count * 100
             average_pnl = total_pnl / closed_count
+            best_trade = max(closed_trades, key=lambda trade: trade.pnl)
+            worst_trade = min(closed_trades, key=lambda trade: trade.pnl)
+            best_pnl = best_trade.pnl
+            worst_pnl = worst_trade.pnl
         else:
             win_rate = 0
             average_pnl = 0
+            best_pnl = 0
+            worst_pnl = 0
 
         await message.answer(
-            "🧠 Самообучение\n\n"
+            "🧠 Самообучение 2.0\n\n"
             f"📊 Всего сделок: {total_trades}\n"
-            f"✅ Закрытых сделок: {closed_count}\n"
-            f"🟢 Прибыльных: {profitable_count}\n"
-            f"🔴 Убыточных: {losing_count}\n\n"
-            f"🏆 Точность: {win_rate:.2f}%\n"
+            f"🟢 Открытых сделок: {open_count}\n"
+            f"✅ Закрытых сделок: {closed_count}\n\n"
+            f"🏆 Прибыльных: {profitable_count}\n"
+            f"🔴 Убыточных: {losing_count}\n"
+            f"🎯 Win Rate: {win_rate:.2f}%\n\n"
             f"💰 Общий PnL: {total_pnl:.2f} USDT\n"
-            f"📈 Средний PnL: {average_pnl:.2f} USDT\n\n"
-            "Это первая версия самообучения: бот уже анализирует "
-            "результаты своих прошлых сделок."
+            f"📈 Средний PnL: {average_pnl:.2f} USDT\n"
+            f"🚀 Лучшая сделка: {best_pnl:.2f} USDT\n"
+            f"⚠️ Худшая сделка: {worst_pnl:.2f} USDT\n\n"
+            f"🤖 Средняя уверенность сигналов: {average_confidence:.2f}%\n\n"
+            "Бот уже анализирует качество своих прошлых решений "
+            "и накапливает статистику для будущей автоторговли."
         )
 
 
