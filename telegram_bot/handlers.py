@@ -21,6 +21,8 @@ from database import get_session
 from models.user import User
 from models.trade import Trade
 from models.market_signal import MarketSignal
+
+
 router = Router()
 
 
@@ -28,7 +30,6 @@ router = Router()
 async def start_handler(message: Message) -> None:
 
     async with get_session() as session:
-
         result = await session.execute(
             select(User).where(
                 User.telegram_id == message.from_user.id
@@ -38,7 +39,6 @@ async def start_handler(message: Message) -> None:
         user = result.scalar_one_or_none()
 
         if user is None:
-
             user = User(
                 telegram_id=message.from_user.id,
                 username=message.from_user.username,
@@ -62,7 +62,6 @@ async def analysis_handler(message: Message) -> None:
     analysis = await get_btc_market_analysis()
 
     async with get_session() as session:
-
         signal = MarketSignal(
             asset="BTC",
             price=analysis["last_price"],
@@ -92,11 +91,11 @@ async def analysis_handler(message: Message) -> None:
 
     await message.answer(text)
 
+
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
 async def demo_trading_handler(message: Message) -> None:
 
     async with get_session() as session:
-
         result = await session.execute(
             select(User).where(
                 User.telegram_id == message.from_user.id
@@ -112,7 +111,7 @@ async def demo_trading_handler(message: Message) -> None:
     await message.answer(
         (
             "💹 Демо-счет\n\n"
-            f"💰 Баланс: {user.balance} USDT\n"
+            f"💰 Баланс: {user.balance:.2f} USDT\n"
             f"👤 Пользователь: {user.first_name}\n\n"
             "Выберите действие:"
         ),
@@ -125,11 +124,11 @@ async def buy_btc_handler(message: Message) -> None:
 
     analysis = await get_btc_market_analysis()
 
-    BTC_PRICE = analysis["last_price"]
-    BUY_AMOUNT_USDT = 1000
+    btc_price = analysis["last_price"]
+    buy_amount_usdt = 1000
+    btc_amount = buy_amount_usdt / btc_price
 
     async with get_session() as session:
-
         result = await session.execute(
             select(User).where(
                 User.telegram_id == message.from_user.id
@@ -139,20 +138,14 @@ async def buy_btc_handler(message: Message) -> None:
         user = result.scalar_one_or_none()
 
         if user is None:
-            await message.answer(
-                "Пользователь не найден."
-            )
+            await message.answer("Пользователь не найден.")
             return
 
-        if user.balance < BUY_AMOUNT_USDT:
-            await message.answer(
-                "❌ Недостаточно средств."
-            )
+        if user.balance < buy_amount_usdt:
+            await message.answer("❌ Недостаточно средств.")
             return
 
-        btc_amount = BUY_AMOUNT_USDT / BTC_PRICE
-
-        user.balance -= BUY_AMOUNT_USDT
+        user.balance -= buy_amount_usdt
 
         market_snapshot = (
             f"price={analysis['last_price']:.2f}; "
@@ -168,7 +161,7 @@ async def buy_btc_handler(message: Message) -> None:
             user_id=user.id,
             asset="BTC",
             side="BUY",
-            price=BTC_PRICE,
+            price=btc_price,
             quantity=btc_amount,
             market_snapshot=market_snapshot,
             trigger_news=None,
@@ -182,11 +175,13 @@ async def buy_btc_handler(message: Message) -> None:
 
         session.add(trade)
 
+        new_balance = user.balance
+
     await message.answer(
         f"✅ BTC куплен\n\n"
-        f"Цена: {BTC_PRICE:.2f} USDT\n"
+        f"Цена: {btc_price:.2f} USDT\n"
         f"Количество BTC: {btc_amount:.8f}\n"
-        f"Новый баланс: {user.balance:.2f} USDT\n\n"
+        f"Новый баланс: {new_balance:.2f} USDT\n\n"
         f"📊 Сигнал: {analysis['signal']}\n"
         f"RSI: {analysis['rsi']:.2f}\n"
         f"EMA20: {analysis['ema20']:.2f}\n"
@@ -195,68 +190,13 @@ async def buy_btc_handler(message: Message) -> None:
         f"Причина:\n{analysis['recommendation']}"
     )
 
-    BTC_PRICE = await get_btc_price()
-    BUY_AMOUNT_USDT = 1000
-
-    async with get_session() as session:
-
-        result = await session.execute(
-            select(User).where(
-                User.telegram_id == message.from_user.id
-            )
-        )
-
-        user = result.scalar_one_or_none()
-
-        if user is None:
-            await message.answer(
-                "Пользователь не найден."
-            )
-            return
-
-        if user.balance < BUY_AMOUNT_USDT:
-            await message.answer(
-                "❌ Недостаточно средств."
-            )
-            return
-
-        btc_amount = BUY_AMOUNT_USDT / BTC_PRICE
-
-        user.balance -= BUY_AMOUNT_USDT
-
-        trade = Trade(
-            user_id=user.id,
-            asset="BTC",
-            side="BUY",
-            price=BTC_PRICE,
-            quantity=btc_amount,
-            market_snapshot="Demo BTC purchase",
-            trigger_news=None,
-            status="OPEN",
-            pnl=0.0,
-            confidence_score=90,
-            stop_loss_pct=5.0,
-            take_profit_pct=10.0,
-            rationale="Demo purchase",
-        )
-
-        session.add(trade)
-
-    await message.answer(
-        f"✅ BTC куплен\n\n"
-        f"Цена: {BTC_PRICE} USDT\n"
-        f"Количество BTC: {btc_amount:.8f}\n"
-        f"Новый баланс: {user.balance:.2f} USDT"
-    )
-
 
 @router.message(lambda message: message.text == "📉 Продать BTC")
 async def sell_btc_handler(message: Message) -> None:
 
-    BTC_PRICE = await get_btc_price()
+    btc_price = await get_btc_price()
 
     async with get_session() as session:
-
         result = await session.execute(
             select(User).where(
                 User.telegram_id == message.from_user.id
@@ -266,28 +206,24 @@ async def sell_btc_handler(message: Message) -> None:
         user = result.scalar_one_or_none()
 
         if user is None:
-            await message.answer(
-                "Пользователь не найден."
-            )
+            await message.answer("Пользователь не найден.")
             return
 
         result = await session.execute(
             select(Trade).where(
                 Trade.user_id == user.id,
                 Trade.asset == "BTC",
-                Trade.status == "OPEN"
+                Trade.status == "OPEN",
             )
         )
 
         trade = result.scalars().first()
 
         if trade is None:
-            await message.answer(
-                "❌ Открытых сделок BTC нет."
-            )
+            await message.answer("❌ Открытых сделок BTC нет.")
             return
 
-        sell_amount = trade.quantity * BTC_PRICE
+        sell_amount = trade.quantity * btc_price
         buy_amount = trade.quantity * trade.price
         pnl = sell_amount - buy_amount
 
@@ -296,72 +232,27 @@ async def sell_btc_handler(message: Message) -> None:
         trade.status = "CLOSED"
         trade.pnl = pnl
 
+        new_balance = user.balance
+        buy_price = trade.price
+        quantity = trade.quantity
+
     pnl_icon = "🟢" if pnl >= 0 else "🔴"
 
     await message.answer(
         f"✅ BTC продан\n\n"
-        f"Цена покупки: {trade.price:.2f} USDT\n"
-        f"Цена продажи: {BTC_PRICE:.2f} USDT\n"
-        f"Количество: {trade.quantity:.8f} BTC\n"
+        f"Цена покупки: {buy_price:.2f} USDT\n"
+        f"Цена продажи: {btc_price:.2f} USDT\n"
+        f"Количество: {quantity:.8f} BTC\n"
         f"Получено: {sell_amount:.2f} USDT\n"
         f"{pnl_icon} PnL: {pnl:.2f} USDT\n\n"
-        f"Баланс: {user.balance:.2f} USDT"
+        f"Баланс: {new_balance:.2f} USDT"
     )
-
-    BTC_PRICE = await get_btc_price()
-
-    async with get_session() as session:
-
-        result = await session.execute(
-            select(User).where(
-                User.telegram_id == message.from_user.id
-            )
-        )
-
-        user = result.scalar_one_or_none()
-
-        if user is None:
-            await message.answer(
-                "Пользователь не найден."
-            )
-            return
-
-        result = await session.execute(
-            select(Trade).where(
-                Trade.user_id == user.id,
-                Trade.asset == "BTC",
-                Trade.status == "OPEN"
-            )
-        )
-
-        trade = result.scalars().first()
-
-        if trade is None:
-            await message.answer(
-                "❌ Открытых сделок BTC нет."
-            )
-            return
-
-        sell_amount = trade.quantity * BTC_PRICE
-
-        user.balance += sell_amount
-
-        trade.status = "CLOSED"
-
-        await message.answer(
-            f"✅ BTC продан\n\n"
-            f"Цена: {BTC_PRICE} USDT\n"
-            f"Количество: {trade.quantity:.8f}\n"
-            f"Получено: {sell_amount:.2f} USDT\n"
-            f"Баланс: {user.balance:.2f} USDT"
-        )
 
 
 @router.message(lambda message: message.text == "📋 Мои сделки")
 async def trades_handler(message: Message) -> None:
 
     async with get_session() as session:
-
         result = await session.execute(
             select(User).where(
                 User.telegram_id == message.from_user.id
@@ -383,21 +274,19 @@ async def trades_handler(message: Message) -> None:
         trades = result.scalars().all()
 
         if not trades:
-            await message.answer(
-                "📋 У вас пока нет сделок."
-            )
+            await message.answer("📋 У вас пока нет сделок.")
             return
 
         text = "📋 Ваши сделки:\n\n"
 
         for trade in trades[-10:]:
-
             text += (
                 f"🪙 {trade.asset}\n"
                 f"📈 Тип: {trade.side}\n"
-                f"💰 Цена: {trade.price}\n"
-                f"📦 Количество: {trade.quantity}\n"
-                f"📊 Статус: {trade.status}\n\n"
+                f"💰 Цена: {trade.price:.2f}\n"
+                f"📦 Количество: {trade.quantity:.8f}\n"
+                f"📊 Статус: {trade.status}\n"
+                f"💵 PnL: {trade.pnl:.2f} USDT\n\n"
             )
 
         await message.answer(text)
@@ -416,7 +305,6 @@ async def back_to_main_menu(message: Message) -> None:
 async def self_learning_handler(message: Message) -> None:
 
     async with get_session() as session:
-
         result = await session.execute(
             select(User).where(
                 User.telegram_id == message.from_user.id
@@ -466,29 +354,18 @@ async def self_learning_handler(message: Message) -> None:
         total_trades = len(trades)
         closed_count = len(closed_trades)
         open_count = total_trades - closed_count
-
         profitable_count = len(profitable_trades)
         losing_count = len(losing_trades)
 
-        total_pnl = sum(
-            trade.pnl
-            for trade in closed_trades
-        )
-
-        total_confidence = sum(
-            trade.confidence_score
-            for trade in trades
-        )
-
+        total_pnl = sum(trade.pnl for trade in closed_trades)
+        total_confidence = sum(trade.confidence_score for trade in trades)
         average_confidence = total_confidence / total_trades
 
         if closed_count > 0:
             win_rate = profitable_count / closed_count * 100
             average_pnl = total_pnl / closed_count
-            best_trade = max(closed_trades, key=lambda trade: trade.pnl)
-            worst_trade = min(closed_trades, key=lambda trade: trade.pnl)
-            best_pnl = best_trade.pnl
-            worst_pnl = worst_trade.pnl
+            best_pnl = max(trade.pnl for trade in closed_trades)
+            worst_pnl = min(trade.pnl for trade in closed_trades)
         else:
             win_rate = 0
             average_pnl = 0
