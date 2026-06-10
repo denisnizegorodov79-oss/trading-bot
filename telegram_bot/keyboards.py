@@ -11,6 +11,9 @@ KeyboardButton(text="💹 Демо-Торговля"),
 ],
 [
 KeyboardButton(text="🧠 Самообучение"),
+KeyboardButton(text="🔔 Авто-сигналы"),
+],
+[
 KeyboardButton(text="⚙️ Настройки"),
 ],
 ],
