@@ -21,7 +21,7 @@ from models.trade import Trade
 from models.historical_error import HistoricalError
 from models.user import User
 from models.market_signal import MarketSignal
-
+from models.user_settings import UserSettings
 def build_database_url() -> str:
     """
     Преобразование DATABASE_URL для SQLAlchemy Async.
