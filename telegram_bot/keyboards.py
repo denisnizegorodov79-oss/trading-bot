@@ -14,6 +14,7 @@ KeyboardButton(text="🧠 Самообучение"),
 KeyboardButton(text="🔔 Авто-сигналы"),
 ],
 [
+KeyboardButton(text="🔔 Проверить сигнал"),
 KeyboardButton(text="⚙️ Настройки"),
 ],
 ],
