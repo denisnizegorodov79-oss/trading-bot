@@ -89,24 +89,6 @@ async def analysis_handler(message: Message) -> None:
             "Проверь Railway Logs, там будет ANALYSIS_ERROR."
         )
 
-    try:
-        async with get_session() as session:
-            signal = MarketSignal(
-                asset="BTC",
-                price=analysis["last_price"],
-                rsi=analysis["rsi"],
-                ema20=analysis["ema20"],
-                ema50=analysis["ema50"],
-                signal=analysis["signal"],
-                confidence=analysis["confidence"],
-            )
-
-            session.add(signal)
-
-    except Exception as error:
-        print("MARKET_SIGNAL_SAVE_ERROR:", repr(error))
-
-
 
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
 async def demo_trading_handler(message: Message) -> None:
