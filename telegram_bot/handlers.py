@@ -59,37 +59,53 @@ async def start_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "📊 Анализ")
 async def analysis_handler(message: Message) -> None:
 
-    analysis = await get_btc_market_analysis()
+    await message.answer("⏳ Получаю анализ BTC...")
 
-    async with get_session() as session:
-        signal = MarketSignal(
-            asset="BTC",
-            price=analysis["last_price"],
-            rsi=analysis["rsi"],
-            ema20=analysis["ema20"],
-            ema50=analysis["ema50"],
-            signal=analysis["signal"],
-            confidence=analysis["confidence"],
+    try:
+        analysis = await get_btc_market_analysis()
+
+        text = (
+            "📊 Анализ BTC/USDT\n\n"
+            f"💰 Цена: {analysis['last_price']:.2f} USDT\n"
+            f"📈 Изменение 24ч: {analysis['change_24h']:.2f}%\n"
+            f"🔼 Максимум 24ч: {analysis['high_24h']:.2f} USDT\n"
+            f"🔽 Минимум 24ч: {analysis['low_24h']:.2f} USDT\n"
+            f"📊 Объём 24ч: {analysis['volume_24h']:.2f} USDT\n\n"
+            f"RSI: {analysis['rsi']:.2f}\n"
+            f"EMA20: {analysis['ema20']:.2f}\n"
+            f"EMA50: {analysis['ema50']:.2f}\n\n"
+            f"Сигнал: {analysis['signal']}\n"
+            f"Уверенность: {analysis['confidence']}%\n\n"
+            f"Рекомендация:\n{analysis['recommendation']}"
         )
 
-        session.add(signal)
+        await message.answer(text)
 
-    text = (
-        "📊 Анализ BTC/USDT\n\n"
-        f"💰 Цена: {analysis['last_price']:.2f} USDT\n"
-        f"📈 Изменение 24ч: {analysis['change_24h']:.2f}%\n"
-        f"🔼 Максимум 24ч: {analysis['high_24h']:.2f} USDT\n"
-        f"🔽 Минимум 24ч: {analysis['low_24h']:.2f} USDT\n"
-        f"📊 Объём 24ч: {analysis['volume_24h']:.2f} USDT\n\n"
-        f"RSI: {analysis['rsi']:.2f}\n"
-        f"EMA20: {analysis['ema20']:.2f}\n"
-        f"EMA50: {analysis['ema50']:.2f}\n\n"
-        f"Сигнал: {analysis['signal']}\n"
-        f"Уверенность: {analysis['confidence']}%\n\n"
-        f"Рекомендация:\n{analysis['recommendation']}"
-    )
+    except Exception as error:
+        print("ANALYSIS_ERROR:", repr(error))
 
-    await message.answer(text)
+        await message.answer(
+            "❌ Не удалось получить анализ BTC.\n\n"
+            "Проверь Railway Logs, там будет ANALYSIS_ERROR."
+        )
+
+    try:
+        async with get_session() as session:
+            signal = MarketSignal(
+                asset="BTC",
+                price=analysis["last_price"],
+                rsi=analysis["rsi"],
+                ema20=analysis["ema20"],
+                ema50=analysis["ema50"],
+                signal=analysis["signal"],
+                confidence=analysis["confidence"],
+            )
+
+            session.add(signal)
+
+    except Exception as error:
+        print("MARKET_SIGNAL_SAVE_ERROR:", repr(error))
+
 
 
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
