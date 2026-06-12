@@ -400,12 +400,52 @@ async def self_learning_handler(message: Message) -> None:
 @router.message(lambda message: message.text == "🔔 Авто-сигналы")
 async def auto_signals_handler(message: Message) -> None:
 
-    await message.answer(
-        "🔔 Авто-сигналы\n\n"
-        "Скоро бот будет автоматически отслеживать рынок "
-        "и присылать рекомендации по BTC.\n\n"
-        "Пока режим находится в подготовке."
-    )
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User).where(
+                User.telegram_id == message.from_user.id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            await message.answer(
+                "Пользователь не найден."
+            )
+            return
+
+        result = await session.execute(
+            select(UserSettings).where(
+                UserSettings.user_id == user.id
+            )
+        )
+
+        settings = result.scalar_one_or_none()
+
+        if settings is None:
+
+            settings = UserSettings(
+                user_id=user.id,
+                auto_signals_enabled=False,
+            )
+
+            session.add(settings)
+
+        status = (
+            "ВКЛЮЧЕНЫ ✅"
+            if settings.auto_signals_enabled
+            else "ВЫКЛЮЧЕНЫ ❌"
+        )
+
+        await message.answer(
+            "🔔 Авто-сигналы\n\n"
+            f"Статус: {status}\n\n"
+            "Скоро бот будет автоматически "
+            "отслеживать рынок BTC и "
+            "присылать рекомендации."
+        )
 @router.message(lambda message: message.text == "⚙️ Настройки")
 async def settings_handler(message: Message) -> None:
 
