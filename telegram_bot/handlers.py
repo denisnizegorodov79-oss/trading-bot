@@ -21,7 +21,7 @@ from database import get_session
 from models.user import User
 from models.trade import Trade
 from models.market_signal import MarketSignal
-
+from models.user_settings import UserSettings
 
 router = Router()
 
