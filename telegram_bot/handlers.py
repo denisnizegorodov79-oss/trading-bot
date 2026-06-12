@@ -428,10 +428,14 @@ async def auto_signals_handler(message: Message) -> None:
 
             settings = UserSettings(
                 user_id=user.id,
-                auto_signals_enabled=False,
+                auto_signals_enabled=True,
             )
 
             session.add(settings)
+
+        else:
+
+            settings.auto_signals_enabled = not settings.auto_signals_enabled
 
         status = (
             "ВКЛЮЧЕНЫ ✅"
@@ -439,13 +443,12 @@ async def auto_signals_handler(message: Message) -> None:
             else "ВЫКЛЮЧЕНЫ ❌"
         )
 
-        await message.answer(
-            "🔔 Авто-сигналы\n\n"
-            f"Статус: {status}\n\n"
-            "Скоро бот будет автоматически "
-            "отслеживать рынок BTC и "
-            "присылать рекомендации."
-        )
+    await message.answer(
+        "🔔 Авто-сигналы\n\n"
+        f"Статус: {status}\n\n"
+        "Теперь бот будет использовать эту настройку "
+        "для будущих автоматических уведомлений по BTC."
+    )
 @router.message(lambda message: message.text == "⚙️ Настройки")
 async def settings_handler(message: Message) -> None:
 
