@@ -449,6 +449,41 @@ async def auto_signals_handler(message: Message) -> None:
         "Теперь бот будет использовать эту настройку "
         "для будущих автоматических уведомлений по BTC."
     )
+@router.message(lambda message: message.text == "🔔 Проверить сигнал")
+async def check_signal_handler(message: Message) -> None:
+
+    analysis = await get_btc_market_analysis()
+
+    signal = analysis["signal"]
+    confidence = analysis["confidence"]
+
+    if signal == "BUY" and confidence >= 70:
+
+        await message.answer(
+            "🟢 Сильный сигнал BTC\n\n"
+            f"Цена: {analysis['last_price']:.2f} USDT\n"
+            f"Уверенность: {confidence}%\n\n"
+            f"{analysis['recommendation']}"
+        )
+
+    elif signal == "SELL" and confidence >= 70:
+
+        await message.answer(
+            "🔴 Сильный сигнал BTC\n\n"
+            f"Цена: {analysis['last_price']:.2f} USDT\n"
+            f"Уверенность: {confidence}%\n\n"
+            f"{analysis['recommendation']}"
+        )
+
+    else:
+
+        await message.answer(
+            "🟡 Сильного сигнала сейчас нет.\n\n"
+            f"Текущий сигнал: {signal}\n"
+            f"Уверенность: {confidence}%"
+        )
+
+
 @router.message(lambda message: message.text == "⚙️ Настройки")
 async def settings_handler(message: Message) -> None:
 
