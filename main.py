@@ -7,6 +7,8 @@ from aiogram import Bot
 from aiogram import Dispatcher
 from aiogram.types import BotCommand
 
+from sqlalchemy import select
+
 from config import (
     TELEGRAM_TOKEN,
     LOG_LEVEL,
@@ -17,18 +19,16 @@ from config import (
 from database import (
     create_database,
     health_check,
+    get_session,
 )
 
 from telegram_bot.handlers import router
-
-from database import get_session
-
-from sqlalchemy import select
 
 from models.user import User
 from models.user_settings import UserSettings
 
 from services.market_data import get_btc_market_analysis
+
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -73,20 +73,43 @@ async def set_bot_commands() -> None:
 
     await bot.set_my_commands(commands)
 
+
 async def test_notification() -> None:
 
-                )
+    await asyncio.sleep(30)
+
+    try:
+        analysis = await get_btc_market_analysis()
+
+        signal = analysis["signal"]
+        confidence = analysis["confidence"]
+
+        print("AUTO_SIGNAL_CHECK:", signal, confidence)
+
+        async with get_session() as session:
+
+            result = await session.execute(
+                select(User)
             )
 
-            settings = result.scalar_one_or_none()
+            users = result.scalars().all()
 
-            if (
-                settings is None
-                or not settings.auto_signals_enabled
-            ):
-                continue
+            for user in users:
 
-            try:
+                result = await session.execute(
+                    select(UserSettings).where(
+                        UserSettings.user_id == user.id
+                    )
+                )
+
+                settings = result.scalar_one_or_none()
+
+                if (
+                    settings is None
+                    or not settings.auto_signals_enabled
+                ):
+                    continue
+
                 await bot.send_message(
                     user.telegram_id,
                     f"🔔 BTC ALERT\n\n"
@@ -96,11 +119,14 @@ async def test_notification() -> None:
                     f"{analysis['recommendation']}"
                 )
 
-            except Exception as error:
-                print(
-                    "NOTIFICATION_ERROR:",
-                    repr(error)
-                )
+    except Exception as error:
+        print(
+            "AUTO_NOTIFICATION_ERROR:",
+            repr(error)
+        )
+
+
+async def startup() -> None:
     logger.info("Starting AI Trading Bot...")
 
     validate_environment()
@@ -115,7 +141,6 @@ async def test_notification() -> None:
         f"DATABASE_OK = {database_ok}"
     )
 
-    # Временно отключаем остановку бота при ошибке PostgreSQL
     logger.info(
         "Database connection check completed."
     )
