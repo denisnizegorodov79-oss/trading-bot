@@ -119,13 +119,13 @@ async def startup() -> None:
 
     logger.info("Database initialized.")
 
-await set_bot_commands()
+    await set_bot_commands()
 
-logger.info("Telegram commands registered.")
+    logger.info("Telegram commands registered.")
 
-asyncio.create_task(
-    test_notification()
-)
+    asyncio.create_task(
+        test_notification()
+    )
 
 
 async def shutdown() -> None:
