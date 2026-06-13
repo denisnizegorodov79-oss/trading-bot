@@ -21,6 +21,11 @@ from database import (
 
 from telegram_bot.handlers import router
 
+from database import get_session
+
+from sqlalchemy import select
+
+from models.user import User
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -65,7 +70,31 @@ async def set_bot_commands() -> None:
 
     await bot.set_my_commands(commands)
 
+async def test_notification() -> None:
 
+    await asyncio.sleep(30)
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User)
+        )
+
+        users = result.scalars().all()
+
+        for user in users:
+
+            try:
+                await bot.send_message(
+                    user.telegram_id,
+                    "🔔 Тест автоуведомлений работает."
+                )
+
+            except Exception as error:
+                print(
+                    "NOTIFICATION_ERROR:",
+                    repr(error)
+                )
 async def startup() -> None:
     logger.info("Starting AI Trading Bot...")
 
@@ -91,7 +120,9 @@ async def startup() -> None:
     logger.info("Database initialized.")
 
     await set_bot_commands()
-
+asyncio.create_task(
+    test_notification()
+)
     logger.info("Telegram commands registered.")
 
 
