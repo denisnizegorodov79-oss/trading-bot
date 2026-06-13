@@ -82,7 +82,7 @@ async def test_notification() -> None:
     signal = analysis["signal"]
     confidence = analysis["confidence"]
 
-print("AUTO_SIGNAL_CHECK:", signal, confidence)
+    print("AUTO_SIGNAL_CHECK:", signal, confidence)
 
     async with get_session() as session:
 
@@ -109,7 +109,6 @@ print("AUTO_SIGNAL_CHECK:", signal, confidence)
                 continue
 
             try:
-
                 await bot.send_message(
                     user.telegram_id,
                     f"🔔 BTC ALERT\n\n"
@@ -120,36 +119,10 @@ print("AUTO_SIGNAL_CHECK:", signal, confidence)
                 )
 
             except Exception as error:
-
                 print(
                     "NOTIFICATION_ERROR:",
                     repr(error)
                 )
-
-    await asyncio.sleep(30)
-
-    async with get_session() as session:
-
-        result = await session.execute(
-            select(User)
-        )
-
-        users = result.scalars().all()
-
-        for user in users:
-
-            try:
-                await bot.send_message(
-                    user.telegram_id,
-                    "🔔 Тест автоуведомлений работает."
-                )
-
-            except Exception as error:
-                print(
-                    "NOTIFICATION_ERROR:",
-                    repr(error)
-                )
-async def startup() -> None:
     logger.info("Starting AI Trading Bot...")
 
     validate_environment()
