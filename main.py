@@ -26,6 +26,9 @@ from database import get_session
 from sqlalchemy import select
 
 from models.user import User
+from models.user_settings import UserSettings
+
+from services.market_data import get_btc_market_analysis
 
 logging.basicConfig(
     level=LOG_LEVEL,
