@@ -74,6 +74,58 @@ async def test_notification() -> None:
 
     await asyncio.sleep(30)
 
+    analysis = await get_btc_market_analysis()
+
+    signal = analysis["signal"]
+    confidence = analysis["confidence"]
+
+    if confidence < 70:
+        return
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(User)
+        )
+
+        users = result.scalars().all()
+
+        for user in users:
+
+            result = await session.execute(
+                select(UserSettings).where(
+                    UserSettings.user_id == user.id
+                )
+            )
+
+            settings = result.scalar_one_or_none()
+
+            if (
+                settings is None
+                or not settings.auto_signals_enabled
+            ):
+                continue
+
+            try:
+
+                await bot.send_message(
+                    user.telegram_id,
+                    f"🔔 BTC ALERT\n\n"
+                    f"Цена: {analysis['last_price']:.2f} USDT\n"
+                    f"Сигнал: {signal}\n"
+                    f"Уверенность: {confidence}%\n\n"
+                    f"{analysis['recommendation']}"
+                )
+
+            except Exception as error:
+
+                print(
+                    "NOTIFICATION_ERROR:",
+                    repr(error)
+                )
+
+    await asyncio.sleep(30)
+
     async with get_session() as session:
 
         result = await session.execute(
