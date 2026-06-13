@@ -75,28 +75,6 @@ async def set_bot_commands() -> None:
 
 async def test_notification() -> None:
 
-    await asyncio.sleep(30)
-
-    analysis = await get_btc_market_analysis()
-
-    signal = analysis["signal"]
-    confidence = analysis["confidence"]
-
-    print("AUTO_SIGNAL_CHECK:", signal, confidence)
-
-    async with get_session() as session:
-
-        result = await session.execute(
-            select(User)
-        )
-
-        users = result.scalars().all()
-
-        for user in users:
-
-            result = await session.execute(
-                select(UserSettings).where(
-                    UserSettings.user_id == user.id
                 )
             )
 
