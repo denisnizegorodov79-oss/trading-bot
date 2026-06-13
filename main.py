@@ -82,8 +82,7 @@ async def test_notification() -> None:
     signal = analysis["signal"]
     confidence = analysis["confidence"]
 
-    if confidence < 70:
-        return
+print("AUTO_SIGNAL_CHECK:", signal, confidence)
 
     async with get_session() as session:
 
