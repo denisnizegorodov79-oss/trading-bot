@@ -86,10 +86,10 @@ async def test_notification() -> None:
             signal = analysis["signal"]
             confidence = analysis["confidence"]
 
-            print("AUTO_SIGNAL_CHECK:", signal, confidence)
+                        print("AUTO_SIGNAL_CHECK:", signal, confidence)
 
             if confidence < 70:
-            continue
+                continue
 
             async with get_session() as session:
                 result = await session.execute(
