@@ -78,7 +78,7 @@ async def test_notification() -> None:
 
     while True:
 
-        await asyncio.sleep(60)
+        await asyncio.sleep(300)
 
         try:
             analysis = await get_btc_market_analysis()
@@ -87,6 +87,9 @@ async def test_notification() -> None:
             confidence = analysis["confidence"]
 
             print("AUTO_SIGNAL_CHECK:", signal, confidence)
+
+            if confidence < 70:
+            continue
 
             async with get_session() as session:
                 result = await session.execute(
