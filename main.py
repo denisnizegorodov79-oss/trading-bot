@@ -128,7 +128,8 @@ async def test_notification() -> None:
                     )
 
                     last_auto_signal = signal
-                                        log = AutoSignalLog(
+
+                    log = AutoSignalLog(
                         asset="BTC",
                         price=analysis["last_price"],
                         signal=signal,
