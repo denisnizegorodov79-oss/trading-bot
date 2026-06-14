@@ -127,6 +127,17 @@ async def test_notification() -> None:
                     )
 
                     last_auto_signal = signal
+                                        log = AutoSignalLog(
+                        asset="BTC",
+                        price=analysis["last_price"],
+                        signal=signal,
+                        confidence=confidence,
+                        recommendation=analysis["recommendation"],
+                    )
+
+                    session.add(log)
+
+                    await session.commit()
         except Exception as error:
             print(
                 "AUTO_NOTIFICATION_ERROR:",
