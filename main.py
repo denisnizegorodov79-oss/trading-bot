@@ -45,7 +45,7 @@ bot = Bot(
 dp = Dispatcher()
 
 dp.include_router(router)
-
+last_auto_signal: str | None = None
 
 async def set_bot_commands() -> None:
     commands = [
@@ -75,7 +75,9 @@ async def set_bot_commands() -> None:
 
 
 async def test_notification() -> None:
-
+    
+    global last_auto_signal
+    
     while True:
 
         await asyncio.sleep(300)
@@ -89,7 +91,10 @@ async def test_notification() -> None:
 
             if confidence < 70:
                 continue
-
+                
+            if signal == last_auto_signal:
+                continue
+                
             async with get_session() as session:
                 result = await session.execute(
                     select(User)
@@ -120,7 +125,7 @@ async def test_notification() -> None:
                         f"Уверенность: {confidence}%\n\n"
                         f"{analysis['recommendation']}"
                     )
-
+                        last_auto_signal = signal
         except Exception as error:
             print(
                 "AUTO_NOTIFICATION_ERROR:",
