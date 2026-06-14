@@ -125,7 +125,8 @@ async def test_notification() -> None:
                         f"Уверенность: {confidence}%\n\n"
                         f"{analysis['recommendation']}"
                     )
-                        last_auto_signal = signal
+
+                    last_auto_signal = signal
         except Exception as error:
             print(
                 "AUTO_NOTIFICATION_ERROR:",
