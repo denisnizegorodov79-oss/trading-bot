@@ -76,13 +76,16 @@ async def set_bot_commands() -> None:
 
 async def test_notification() -> None:
 
-    await asyncio.sleep(30)
+    while True:
 
-    try:
-        analysis = await get_btc_market_analysis()
+        await asyncio.sleep(60)
 
-        signal = analysis["signal"]
-        confidence = analysis["confidence"]
+        try:
+
+            analysis = await get_btc_market_analysis()
+
+            signal = analysis["signal"]
+            confidence = analysis["confidence"]
 
         print("AUTO_SIGNAL_CHECK:", signal, confidence)
 
