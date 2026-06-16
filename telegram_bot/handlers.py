@@ -481,7 +481,6 @@ async def check_signal_handler(message: Message) -> None:
             f"Уверенность: {confidence}%"
         )
 
-... конец auto_signals_handler ...
 
 @router.message(lambda message: message.text == "📊 Статистика сигналов")
 async def signal_stats_handler(message: Message) -> None:
