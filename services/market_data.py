@@ -101,7 +101,10 @@ async def get_btc_market_analysis() -> dict:
     ema20 = calculate_ema(closes[-20:], 20)
     ema50 = calculate_ema(closes[-50:], 50)
     atr = calculate_atr(closes)
-
+    
+    stop_loss = last_price - (atr * 1.5)
+    take_profit = last_price + (atr * 3)
+    
     if rsi < 35 and ema20 > ema50:
         signal = "BUY 🟢"
         confidence = 75
