@@ -133,6 +133,8 @@ async def get_btc_market_analysis() -> dict:
         "ema20": ema20,
         "ema50": ema50,
         "atr": atr,
+        "stop_loss": stop_loss,
+        "take_profit": take_profit,
         "signal": signal,
         "confidence": confidence,
         "recommendation": recommendation,
