@@ -64,6 +64,20 @@ def calculate_rsi(prices: list[float], period: int = 14) -> float:
     return 100 - (100 / (1 + rs))
 
 
+def calculate_atr(prices: list[float], period: int = 14) -> float:
+    ranges = []
+
+    for index in range(1, len(prices)):
+        ranges.append(
+            abs(prices[index] - prices[index - 1])
+        )
+
+    if len(ranges) < period:
+        return 0.0
+
+    return sum(ranges[-period:]) / period
+
+
 async def get_btc_market_analysis() -> dict:
     ticker_url = "https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT"
 
@@ -83,9 +97,10 @@ async def get_btc_market_analysis() -> dict:
 
     closes = await get_btc_candles()
 
-    rsi = calculate_rsi(closes)
-    ema20 = calculate_ema(closes[-20:], 20)
-    ema50 = calculate_ema(closes[-50:], 50)
+rsi = calculate_rsi(closes)
+ema20 = calculate_ema(closes[-20:], 20)
+ema50 = calculate_ema(closes[-50:], 50)
+atr = calculate_atr(closes)
 
     if rsi < 35 and ema20 > ema50:
         signal = "BUY 🟢"
@@ -114,6 +129,7 @@ async def get_btc_market_analysis() -> dict:
         "rsi": rsi,
         "ema20": ema20,
         "ema50": ema50,
+        "atr": atr,
         "signal": signal,
         "confidence": confidence,
         "recommendation": recommendation,
