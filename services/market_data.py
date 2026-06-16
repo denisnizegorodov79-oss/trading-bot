@@ -97,10 +97,10 @@ async def get_btc_market_analysis() -> dict:
 
     closes = await get_btc_candles()
 
-rsi = calculate_rsi(closes)
-ema20 = calculate_ema(closes[-20:], 20)
-ema50 = calculate_ema(closes[-50:], 50)
-atr = calculate_atr(closes)
+    rsi = calculate_rsi(closes)
+    ema20 = calculate_ema(closes[-20:], 20)
+    ema50 = calculate_ema(closes[-50:], 50)
+    atr = calculate_atr(closes)
 
     if rsi < 35 and ema20 > ema50:
         signal = "BUY 🟢"
