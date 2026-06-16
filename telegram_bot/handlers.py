@@ -17,7 +17,7 @@ from telegram_bot.keyboards import (
 )
 
 from database import get_session
-
+from models.auto_signal_log import AutoSignalLog
 from models.user import User
 from models.trade import Trade
 from models.market_signal import MarketSignal
@@ -481,6 +481,62 @@ async def check_signal_handler(message: Message) -> None:
             f"Уверенность: {confidence}%"
         )
 
+... конец auto_signals_handler ...
+
+@router.message(lambda message: message.text == "📊 Статистика сигналов")
+async def signal_stats_handler(message: Message) -> None:
+
+    async with get_session() as session:
+
+        result = await session.execute(
+            select(AutoSignalLog)
+        )
+
+        signals = result.scalars().all()
+
+        if not signals:
+            await message.answer(
+                "📊 Статистика сигналов\n\n"
+                "Пока нет сохранённых авто-сигналов."
+            )
+            return
+
+        total_signals = len(signals)
+
+        buy_count = len([
+            signal for signal in signals
+            if "BUY" in signal.signal
+        ])
+
+        sell_count = len([
+            signal for signal in signals
+            if "SELL" in signal.signal
+        ])
+
+        wait_count = len([
+            signal for signal in signals
+            if "WAIT" in signal.signal or "HOLD" in signal.signal
+        ])
+
+        average_confidence = sum(
+            signal.confidence
+            for signal in signals
+        ) / total_signals
+
+        last_signal = signals[-1]
+
+        await message.answer(
+            "📊 Статистика авто-сигналов\n\n"
+            f"Всего сигналов: {total_signals}\n\n"
+            f"🟢 BUY: {buy_count}\n"
+            f"🔴 SELL: {sell_count}\n"
+            f"🟡 HOLD / WAIT: {wait_count}\n\n"
+            f"Средняя уверенность: {average_confidence:.2f}%\n\n"
+            f"Последний сигнал:\n"
+            f"{last_signal.signal}\n"
+            f"Уверенность: {last_signal.confidence}%\n"
+            f"Цена: {last_signal.price:.2f} USDT"
+        )
 
 @router.message(lambda message: message.text == "⚙️ Настройки")
 async def settings_handler(message: Message) -> None:
