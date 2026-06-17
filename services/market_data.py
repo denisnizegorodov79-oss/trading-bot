@@ -104,6 +104,14 @@ async def get_btc_market_analysis() -> dict:
     
     stop_loss = last_price - (atr * 1.5)
     take_profit = last_price + (atr * 3)
+    risk_per_trade_pct = 1
+
+    risk_amount = 100
+
+    position_size = (
+    risk_amount /
+    abs(last_price - stop_loss)
+)
     
     if rsi < 35 and ema20 > ema50:
         signal = "BUY 🟢"
@@ -135,6 +143,7 @@ async def get_btc_market_analysis() -> dict:
         "atr": atr,
         "stop_loss": stop_loss,
         "take_profit": take_profit,
+        "position_size": position_size,
         "signal": signal,
         "confidence": confidence,
         "recommendation": recommendation,
