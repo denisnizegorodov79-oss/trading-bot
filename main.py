@@ -89,12 +89,13 @@ async def test_notification() -> None:
 
             signal = analysis["signal"]
             confidence = analysis["confidence"]
-                        if (
+            
+            if (
                 "BUY" in signal
                 and confidence >= 75
             ):
 
-                print(
+            print(
                     "AUTO_TRADING_SIGNAL:",
                     signal,
                     confidence,
