@@ -404,7 +404,46 @@ async def self_learning_handler(message: Message) -> None:
             average_pnl = 0
             best_pnl = 0
             worst_pnl = 0
+        result = await session.execute(
+            select(AutoSignalLog)
+        )
 
+        auto_signals = result.scalars().all()
+
+        total_auto_signals = len(auto_signals)
+
+        buy_signals = len([
+            signal
+            for signal in auto_signals
+            if "BUY" in signal.signal
+        ])
+
+        sell_signals = len([
+            signal
+            for signal in auto_signals
+            if "SELL" in signal.signal
+        ])
+
+        hold_signals = len([
+            signal
+            for signal in auto_signals
+            if "HOLD" in signal.signal or "WAIT" in signal.signal
+        ])
+
+        if total_auto_signals > 0:
+            avg_signal_confidence = sum(
+                signal.confidence
+                for signal in auto_signals
+            ) / total_auto_signals
+
+            last_signal = auto_signals[-1]
+            last_signal_text = (
+                f"{last_signal.signal} "
+                f"({last_signal.confidence}%)"
+            )
+        else:
+            avg_signal_confidence = 0
+            last_signal_text = "Нет данных"
         await message.answer(
             "🧠 Самообучение 2.0\n\n"
             f"📊 Всего сделок: {total_trades}\n"
