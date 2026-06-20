@@ -27,6 +27,7 @@ from telegram_bot.handlers import router
 from models.user import User
 from models.user_settings import UserSettings
 from models.auto_signal_log import AutoSignalLog
+from models.trade import Trade
 
 from services.market_data import get_btc_market_analysis
 
@@ -88,6 +89,16 @@ async def test_notification() -> None:
 
             signal = analysis["signal"]
             confidence = analysis["confidence"]
+                        if (
+                "BUY" in signal
+                and confidence >= 75
+            ):
+
+                print(
+                    "AUTO_TRADING_SIGNAL:",
+                    signal,
+                    confidence,
+                )
             print("AUTO_SIGNAL_CHECK:", signal, confidence)
 
             if confidence < 70:
