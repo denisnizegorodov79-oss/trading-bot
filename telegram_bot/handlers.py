@@ -146,7 +146,30 @@ async def buy_btc_handler(message: Message) -> None:
         if user.balance < buy_amount_usdt:
             await message.answer("❌ Недостаточно средств.")
             return
+        result = await session.execute(
+            select(Trade).where(
+                Trade.user_id == user.id,
+                Trade.status == "CLOSED",
+            )
+        )
 
+        closed_trades = result.scalars().all()
+
+        last_closed_trades = closed_trades[-3:]
+
+        losing_streak = (
+            len(last_closed_trades) == 3
+            and all(trade.pnl < 0 for trade in last_closed_trades)
+        )
+
+        if losing_streak:
+            await message.answer(
+                "🛑 Circuit Breaker активирован\n\n"
+                "У вас 3 убыточные сделки подряд.\n"
+                "Новые покупки временно заблокированы.\n\n"
+                "Рекомендуется остановиться и пересмотреть стратегию."
+            )
+            return
         user.balance -= buy_amount_usdt
 
         market_snapshot = (
