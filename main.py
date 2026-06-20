@@ -45,69 +45,53 @@ bot = Bot(
 )
 
 dp = Dispatcher()
-
 dp.include_router(router)
+
 last_auto_signal: str | None = None
+
 
 async def set_bot_commands() -> None:
     commands = [
-        BotCommand(
-            command="start",
-            description="Запуск бота",
-        ),
-        BotCommand(
-            command="analysis",
-            description="Анализ рынка",
-        ),
-        BotCommand(
-            command="demo",
-            description="Демо торговля",
-        ),
-        BotCommand(
-            command="learning",
-            description="Самообучение",
-        ),
-        BotCommand(
-            command="settings",
-            description="Настройки",
-        ),
+        BotCommand(command="start", description="Запуск бота"),
+        BotCommand(command="analysis", description="Анализ рынка"),
+        BotCommand(command="demo", description="Демо торговля"),
+        BotCommand(command="learning", description="Самообучение"),
+        BotCommand(command="settings", description="Настройки"),
     ]
 
     await bot.set_my_commands(commands)
 
 
 async def test_notification() -> None:
-    
     global last_auto_signal
-    
-    while True:
 
+    while True:
         await asyncio.sleep(300)
 
         try:
             analysis = await get_btc_market_analysis()
 
-        signal = analysis["signal"]
-        confidence = analysis["confidence"]
+            signal = analysis["signal"]
+            confidence = analysis["confidence"]
 
-        if (
-            "BUY" in signal
-            and confidence >= 75
-        ):
-            print(
-                "AUTO_TRADING_SIGNAL:",
-                signal,
-                confidence,
-            )
+            print("AUTO_SIGNAL_CHECK:", signal, confidence)
 
-        print("AUTO_SIGNAL_CHECK:", signal, confidence)
+            if (
+                "BUY" in signal
+                and confidence >= 75
+            ):
+                print(
+                    "AUTO_TRADING_SIGNAL:",
+                    signal,
+                    confidence,
+                )
 
-        if confidence < 70:
-            continue
-                
-        if signal == last_auto_signal:
-            continue
-                
+            if confidence < 70:
+                continue
+
+            if signal == last_auto_signal:
+                continue
+
             async with get_session() as session:
                 result = await session.execute(
                     select(User)
@@ -151,12 +135,15 @@ async def test_notification() -> None:
 
                     session.add(log)
 
-                    await session.commit()
+                await session.commit()
+
         except Exception as error:
             print(
                 "AUTO_NOTIFICATION_ERROR:",
-                repr(error)
+                repr(error),
             )
+
+
 async def startup() -> None:
     logger.info("Starting AI Trading Bot...")
 
