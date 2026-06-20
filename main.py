@@ -87,26 +87,26 @@ async def test_notification() -> None:
         try:
             analysis = await get_btc_market_analysis()
 
-            signal = analysis["signal"]
-            confidence = analysis["confidence"]
-            
-            if (
-                "BUY" in signal
-                and confidence >= 75
-            ):
+        signal = analysis["signal"]
+        confidence = analysis["confidence"]
 
+        if (
+            "BUY" in signal
+            and confidence >= 75
+        ):
             print(
-                    "AUTO_TRADING_SIGNAL:",
-                    signal,
-                    confidence,
-                )
-            print("AUTO_SIGNAL_CHECK:", signal, confidence)
+                "AUTO_TRADING_SIGNAL:",
+                signal,
+                confidence,
+            )
 
-            if confidence < 70:
-                continue
+        print("AUTO_SIGNAL_CHECK:", signal, confidence)
+
+        if confidence < 70:
+            continue
                 
-            if signal == last_auto_signal:
-                continue
+        if signal == last_auto_signal:
+            continue
                 
             async with get_session() as session:
                 result = await session.execute(
