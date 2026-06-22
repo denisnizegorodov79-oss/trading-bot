@@ -3,25 +3,12 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from aiogram import Bot
-from aiogram import Dispatcher
+from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
-
 from sqlalchemy import select
 
-from config import (
-    TELEGRAM_TOKEN,
-    LOG_LEVEL,
-    LOG_FORMAT,
-    validate_environment,
-)
-
-from database import (
-    create_database,
-    health_check,
-    get_session,
-)
-
+from config import TELEGRAM_TOKEN, LOG_LEVEL, LOG_FORMAT, validate_environment
+from database import create_database, health_check, get_session
 from telegram_bot.handlers import router
 
 from models.user import User
@@ -32,18 +19,10 @@ from models.trade import Trade
 from services.market_data import get_btc_market_analysis
 
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format=LOG_FORMAT,
-)
-
+logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
-
-bot = Bot(
-    token=TELEGRAM_TOKEN,
-)
-
+bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 dp.include_router(router)
 
@@ -79,17 +58,12 @@ async def test_notification() -> None:
             if (
                 "BUY" in signal
                 and confidence >= 75
+                and signal != last_auto_signal
             ):
-                print(
-                    "AUTO_TRADING_SIGNAL:",
-                    signal,
-                    confidence,
-                )
-                async with get_session() as session:
-                    result = await session.execute(
-                        select(User)
-                    )
+                print("AUTO_TRADING_SIGNAL:", signal, confidence)
 
+                async with get_session() as session:
+                    result = await session.execute(select(User))
                     users = result.scalars().all()
 
                     for user in users:
@@ -151,6 +125,7 @@ async def test_notification() -> None:
                         )
 
                     await session.commit()
+
             if confidence < 70:
                 continue
 
@@ -158,10 +133,7 @@ async def test_notification() -> None:
                 continue
 
             async with get_session() as session:
-                result = await session.execute(
-                    select(User)
-                )
-
+                result = await session.execute(select(User))
                 users = result.scalars().all()
 
                 for user in users:
@@ -203,10 +175,7 @@ async def test_notification() -> None:
                 await session.commit()
 
         except Exception as error:
-            print(
-                "AUTO_NOTIFICATION_ERROR:",
-                repr(error),
-            )
+            print("AUTO_NOTIFICATION_ERROR:", repr(error))
 
 
 async def startup() -> None:
@@ -220,13 +189,8 @@ async def startup() -> None:
 
     print("DATABASE_OK =", database_ok)
 
-    logger.info(
-        f"DATABASE_OK = {database_ok}"
-    )
-
-    logger.info(
-        "Database connection check completed."
-    )
+    logger.info(f"DATABASE_OK = {database_ok}")
+    logger.info("Database connection check completed.")
 
     await create_database()
 
@@ -236,9 +200,7 @@ async def startup() -> None:
 
     logger.info("Telegram commands registered.")
 
-    asyncio.create_task(
-        test_notification()
-    )
+    asyncio.create_task(test_notification())
 
 
 async def shutdown() -> None:
