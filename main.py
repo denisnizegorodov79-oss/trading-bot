@@ -85,7 +85,72 @@ async def test_notification() -> None:
                     signal,
                     confidence,
                 )
+                async with get_session() as session:
+                    result = await session.execute(
+                        select(User)
+                    )
 
+                    users = result.scalars().all()
+
+                    for user in users:
+                        result = await session.execute(
+                            select(Trade).where(
+                                Trade.user_id == user.id,
+                                Trade.asset == "BTC",
+                                Trade.status == "OPEN",
+                            )
+                        )
+
+                        open_trade = result.scalar_one_or_none()
+
+                        if open_trade is not None:
+                            continue
+
+                        trade = Trade(
+                            user_id=user.id,
+                            asset="BTC",
+                            side="BUY",
+                            price=analysis["last_price"],
+                            quantity=analysis["position_size"],
+                            market_snapshot=(
+                                f"signal={signal}; "
+                                f"confidence={confidence}; "
+                                f"rsi={analysis['rsi']:.2f}; "
+                                f"ema20={analysis['ema20']:.2f}; "
+                                f"ema50={analysis['ema50']:.2f}; "
+                                f"atr={analysis['atr']:.2f}"
+                            ),
+                            trigger_news=None,
+                            status="OPEN",
+                            pnl=0.0,
+                            confidence_score=confidence,
+                            stop_loss_pct=0.0,
+                            take_profit_pct=0.0,
+                            rationale=analysis["recommendation"],
+                        )
+
+                        session.add(trade)
+
+                        await bot.send_message(
+                            user.telegram_id,
+                            "🤖 Демо-автоторговля\n\n"
+                            "Открыта автоматическая демо-сделка BTC.\n\n"
+                            f"Цена входа: {analysis['last_price']:.2f} USDT\n"
+                            f"Размер позиции: {analysis['position_size']:.6f} BTC\n"
+                            f"Stop Loss: {analysis['stop_loss']:.2f} USDT\n"
+                            f"Take Profit: {analysis['take_profit']:.2f} USDT\n"
+                            f"Сигнал: {signal}\n"
+                            f"Уверенность: {confidence}%"
+                        )
+
+                        print(
+                            "AUTO_TRADE_OPENED:",
+                            user.telegram_id,
+                            signal,
+                            confidence,
+                        )
+
+                    await session.commit()
             if confidence < 70:
                 continue
 
