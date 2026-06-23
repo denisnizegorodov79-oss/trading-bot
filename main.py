@@ -98,8 +98,8 @@ async def test_notification() -> None:
                             status="OPEN",
                             pnl=0.0,
                             confidence_score=confidence,
-                            stop_loss_pct=0.0,
-                            take_profit_pct=0.0,
+                            stop_loss_pct=analysis["stop_loss"],
+                            take_profit_pct=analysis["take_profit"],
                             rationale=analysis["recommendation"],
                         )
 
