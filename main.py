@@ -5,7 +5,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
-from sqlalchemy import select
+from sqlalchemy import select, desc
 
 from config import TELEGRAM_TOKEN, LOG_LEVEL, LOG_FORMAT, validate_environment
 from database import create_database, health_check, get_session
@@ -50,10 +50,71 @@ async def test_notification() -> None:
         try:
             analysis = await get_btc_market_analysis()
 
+            current_price = analysis["last_price"]
             signal = analysis["signal"]
             confidence = analysis["confidence"]
 
             print("AUTO_SIGNAL_CHECK:", signal, confidence)
+
+            async with get_session() as session:
+                result = await session.execute(
+                    select(Trade).where(
+                        Trade.asset == "BTC",
+                        Trade.status == "OPEN",
+                    )
+                )
+
+                open_trades = result.scalars().all()
+
+                for trade in open_trades:
+                    result = await session.execute(
+                        select(User).where(User.id == trade.user_id)
+                    )
+
+                    user = result.scalar_one_or_none()
+
+                    if user is None:
+                        continue
+
+                    if (
+                        trade.take_profit_pct > 0
+                        and current_price >= trade.take_profit_pct
+                    ):
+                        trade.status = "CLOSED"
+                        trade.pnl = (current_price - trade.price) * trade.quantity
+                        user.balance += trade.pnl
+
+                        await bot.send_message(
+                            user.telegram_id,
+                            "🎯 Take Profit достигнут\n\n"
+                            f"Сделка #{trade.id} закрыта с прибылью.\n"
+                            f"Цена входа: {trade.price:.2f} USDT\n"
+                            f"Цена закрытия: {current_price:.2f} USDT\n"
+                            f"PnL: {trade.pnl:.2f} USDT"
+                        )
+
+                        print("AUTO_TRADE_TP_CLOSED:", trade.id, trade.pnl)
+
+                    elif (
+                        trade.stop_loss_pct > 0
+                        and current_price <= trade.stop_loss_pct
+                    ):
+                        trade.status = "CLOSED"
+                        trade.pnl = (current_price - trade.price) * trade.quantity
+                        user.balance += trade.pnl
+
+                        await bot.send_message(
+                            user.telegram_id,
+                            "🛡 Stop Loss достигнут\n\n"
+                            f"Сделка #{trade.id} закрыта с убытком.\n"
+                            f"Цена входа: {trade.price:.2f} USDT\n"
+                            f"Цена закрытия: {current_price:.2f} USDT\n"
+                            f"PnL: {trade.pnl:.2f} USDT"
+                        )
+
+                        print("AUTO_TRADE_SL_CLOSED:", trade.id, trade.pnl)
+
+                await session.commit()
 
             if (
                 "BUY" in signal
@@ -68,6 +129,20 @@ async def test_notification() -> None:
 
                     for user in users:
                         result = await session.execute(
+                            select(UserSettings).where(
+                                UserSettings.user_id == user.id
+                            )
+                        )
+
+                        settings = result.scalar_one_or_none()
+
+                        if (
+                            settings is None
+                            or not settings.auto_signals_enabled
+                        ):
+                            continue
+
+                        result = await session.execute(
                             select(Trade).where(
                                 Trade.user_id == user.id,
                                 Trade.asset == "BTC",
@@ -80,11 +155,37 @@ async def test_notification() -> None:
                         if open_trade is not None:
                             continue
 
+                        result = await session.execute(
+                            select(Trade)
+                            .where(
+                                Trade.user_id == user.id,
+                                Trade.status == "CLOSED",
+                            )
+                            .order_by(desc(Trade.timestamp))
+                            .limit(3)
+                        )
+
+                        last_closed_trades = result.scalars().all()
+
+                        losing_streak = (
+                            len(last_closed_trades) == 3
+                            and all(trade.pnl < 0 for trade in last_closed_trades)
+                        )
+
+                        if losing_streak:
+                            await bot.send_message(
+                                user.telegram_id,
+                                "🛑 Circuit Breaker активирован\n\n"
+                                "3 последние закрытые сделки были убыточными.\n"
+                                "Автооткрытие новой сделки пропущено."
+                            )
+                            continue
+
                         trade = Trade(
                             user_id=user.id,
                             asset="BTC",
                             side="BUY",
-                            price=analysis["last_price"],
+                            price=current_price,
                             quantity=analysis["position_size"],
                             market_snapshot=(
                                 f"signal={signal}; "
@@ -109,7 +210,7 @@ async def test_notification() -> None:
                             user.telegram_id,
                             "🤖 Демо-автоторговля\n\n"
                             "Открыта автоматическая демо-сделка BTC.\n\n"
-                            f"Цена входа: {analysis['last_price']:.2f} USDT\n"
+                            f"Цена входа: {current_price:.2f} USDT\n"
                             f"Размер позиции: {analysis['position_size']:.6f} BTC\n"
                             f"Stop Loss: {analysis['stop_loss']:.2f} USDT\n"
                             f"Take Profit: {analysis['take_profit']:.2f} USDT\n"
@@ -154,7 +255,7 @@ async def test_notification() -> None:
                     await bot.send_message(
                         user.telegram_id,
                         f"🔔 BTC ALERT\n\n"
-                        f"Цена: {analysis['last_price']:.2f} USDT\n"
+                        f"Цена: {current_price:.2f} USDT\n"
                         f"Сигнал: {signal}\n"
                         f"Уверенность: {confidence}%\n\n"
                         f"{analysis['recommendation']}"
@@ -164,7 +265,7 @@ async def test_notification() -> None:
 
                     log = AutoSignalLog(
                         asset="BTC",
-                        price=analysis["last_price"],
+                        price=current_price,
                         signal=signal,
                         confidence=confidence,
                         recommendation=analysis["recommendation"],
