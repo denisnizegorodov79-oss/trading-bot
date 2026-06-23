@@ -61,7 +61,62 @@ async def test_notification() -> None:
                 and signal != last_auto_signal
             ):
                 print("AUTO_TRADING_SIGNAL:", signal, confidence)
+                            async with get_session() as session:
+                result = await session.execute(
+                    select(Trade).where(
+                        Trade.asset == "BTC",
+                        Trade.status == "OPEN",
+                    )
+                )
 
+                open_trades = result.scalars().all()
+
+                for trade in open_trades:
+                    current_price = analysis["last_price"]
+
+                    if current_price >= trade.take_profit_pct:
+                        trade.status = "CLOSED"
+                        trade.pnl = (
+                            current_price - trade.price
+                        ) * trade.quantity
+
+                        await bot.send_message(
+                            trade.user_id,
+                            "🎯 Take Profit достигнут\n\n"
+                            f"Сделка #{trade.id} закрыта с прибылью.\n"
+                            f"Цена входа: {trade.price:.2f} USDT\n"
+                            f"Цена закрытия: {current_price:.2f} USDT\n"
+                            f"PnL: {trade.pnl:.2f} USDT"
+                        )
+
+                        print(
+                            "AUTO_TRADE_TP_CLOSED:",
+                            trade.id,
+                            trade.pnl,
+                        )
+
+                    elif current_price <= trade.stop_loss_pct:
+                        trade.status = "CLOSED"
+                        trade.pnl = (
+                            current_price - trade.price
+                        ) * trade.quantity
+
+                        await bot.send_message(
+                            trade.user_id,
+                            "🛡 Stop Loss достигнут\n\n"
+                            f"Сделка #{trade.id} закрыта с убытком.\n"
+                            f"Цена входа: {trade.price:.2f} USDT\n"
+                            f"Цена закрытия: {current_price:.2f} USDT\n"
+                            f"PnL: {trade.pnl:.2f} USDT"
+                        )
+
+                        print(
+                            "AUTO_TRADE_SL_CLOSED:",
+                            trade.id,
+                            trade.pnl,
+                        )
+
+                await session.commit()
                 async with get_session() as session:
                     result = await session.execute(select(User))
                     users = result.scalars().all()
