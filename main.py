@@ -67,7 +67,7 @@ async def test_notification() -> None:
                 open_trades = result.scalars().all()
 
                 for trade in open_trades:
-                                        if (
+                    if (
                         trade.stop_loss_pct < 1000
                         or trade.take_profit_pct < 1000
                     ):
