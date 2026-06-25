@@ -366,16 +366,16 @@ async def self_learning_handler(message: Message) -> None:
             )
             return
 
-        closed_trades = [
+        real_trades = [
             trade
             for trade in trades
-            if trade.status == "CLOSED"
+            if trade.rationale != "LEGACY_TEST_TRADE"
         ]
 
-        profitable_trades = [
+        closed_trades = [
             trade
-            for trade in closed_trades
-            if trade.pnl > 0
+            for trade in real_trades
+            if trade.status == "CLOSED"
         ]
 
         losing_trades = [
@@ -384,16 +384,22 @@ async def self_learning_handler(message: Message) -> None:
             if trade.pnl < 0
         ]
 
-        total_trades = len(trades)
+        total_trades = len(real_trades)
         closed_count = len(closed_trades)
         open_count = total_trades - closed_count
         profitable_count = len(profitable_trades)
         losing_count = len(losing_trades)
 
         total_pnl = sum(trade.pnl for trade in closed_trades)
-        total_confidence = sum(trade.confidence_score for trade in trades)
-        average_confidence = total_confidence / total_trades
-
+        total_confidence = sum(
+        trade.confidence_score
+        for trade in real_trades
+        )
+        average_confidence = (
+        total_confidence / total_trades
+        if total_trades > 0
+        else 0
+        )
         if closed_count > 0:
             win_rate = profitable_count / closed_count * 100
             average_pnl = total_pnl / closed_count
