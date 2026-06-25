@@ -28,7 +28,6 @@ router = Router()
 
 @router.message(CommandStart())
 async def start_handler(message: Message) -> None:
-
     async with get_session() as session:
         result = await session.execute(
             select(User).where(
@@ -58,7 +57,6 @@ async def start_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "📊 Анализ")
 async def analysis_handler(message: Message) -> None:
-
     await message.answer("⏳ Получаю анализ BTC...")
 
     try:
@@ -96,7 +94,6 @@ async def analysis_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "💹 Демо-Торговля")
 async def demo_trading_handler(message: Message) -> None:
-
     async with get_session() as session:
         result = await session.execute(
             select(User).where(
@@ -123,7 +120,6 @@ async def demo_trading_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "📈 Купить BTC")
 async def buy_btc_handler(message: Message) -> None:
-
     analysis = await get_btc_market_analysis()
 
     btc_price = analysis["last_price"]
@@ -146,15 +142,16 @@ async def buy_btc_handler(message: Message) -> None:
         if user.balance < buy_amount_usdt:
             await message.answer("❌ Недостаточно средств.")
             return
+
         result = await session.execute(
             select(Trade).where(
                 Trade.user_id == user.id,
                 Trade.status == "CLOSED",
+                Trade.rationale != "LEGACY_TEST_TRADE",
             )
         )
 
         closed_trades = result.scalars().all()
-
         last_closed_trades = closed_trades[-3:]
 
         losing_streak = (
@@ -170,6 +167,7 @@ async def buy_btc_handler(message: Message) -> None:
                 "Рекомендуется остановиться и пересмотреть стратегию."
             )
             return
+
         user.balance -= buy_amount_usdt
 
         market_snapshot = (
@@ -178,6 +176,7 @@ async def buy_btc_handler(message: Message) -> None:
             f"rsi={analysis['rsi']:.2f}; "
             f"ema20={analysis['ema20']:.2f}; "
             f"ema50={analysis['ema50']:.2f}; "
+            f"atr={analysis['atr']:.2f}; "
             f"signal={analysis['signal']}; "
             f"confidence={analysis['confidence']}"
         )
@@ -193,8 +192,8 @@ async def buy_btc_handler(message: Message) -> None:
             status="OPEN",
             pnl=0.0,
             confidence_score=analysis["confidence"],
-            stop_loss_pct=5.0,
-            take_profit_pct=10.0,
+            stop_loss_pct=analysis["stop_loss"],
+            take_profit_pct=analysis["take_profit"],
             rationale=analysis["recommendation"],
         )
 
@@ -211,6 +210,9 @@ async def buy_btc_handler(message: Message) -> None:
         f"RSI: {analysis['rsi']:.2f}\n"
         f"EMA20: {analysis['ema20']:.2f}\n"
         f"EMA50: {analysis['ema50']:.2f}\n"
+        f"ATR: {analysis['atr']:.2f}\n\n"
+        f"🛡 Stop Loss: {analysis['stop_loss']:.2f} USDT\n"
+        f"🎯 Take Profit: {analysis['take_profit']:.2f} USDT\n\n"
         f"Уверенность: {analysis['confidence']}%\n\n"
         f"Причина:\n{analysis['recommendation']}"
     )
@@ -218,7 +220,6 @@ async def buy_btc_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "📉 Продать BTC")
 async def sell_btc_handler(message: Message) -> None:
-
     btc_price = await get_btc_price()
 
     async with get_session() as session:
@@ -276,7 +277,6 @@ async def sell_btc_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "📋 Мои сделки")
 async def trades_handler(message: Message) -> None:
-
     async with get_session() as session:
         result = await session.execute(
             select(User).where(
@@ -327,7 +327,6 @@ async def trades_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "⬅️ Главное меню")
 async def back_to_main_menu(message: Message) -> None:
-
     await message.answer(
         "Главное меню",
         reply_markup=MAIN_MENU_KEYBOARD,
@@ -336,7 +335,6 @@ async def back_to_main_menu(message: Message) -> None:
 
 @router.message(lambda message: message.text == "🧠 Самообучение")
 async def self_learning_handler(message: Message) -> None:
-
     async with get_session() as session:
         result = await session.execute(
             select(User).where(
@@ -358,24 +356,30 @@ async def self_learning_handler(message: Message) -> None:
 
         trades = result.scalars().all()
 
-        if not trades:
-            await message.answer(
-                "🧠 Самообучение 2.0\n\n"
-                "Пока нет сделок для анализа.\n"
-                "Сначала совершите несколько демо-сделок."
-            )
-            return
-
         real_trades = [
             trade
             for trade in trades
             if trade.rationale != "LEGACY_TEST_TRADE"
         ]
 
+        if not real_trades:
+            await message.answer(
+                "🧠 Самообучение 3.0\n\n"
+                "Пока нет новых сделок для анализа.\n"
+                "Старые тестовые сделки исключены из статистики."
+            )
+            return
+
         closed_trades = [
             trade
             for trade in real_trades
             if trade.status == "CLOSED"
+        ]
+
+        profitable_trades = [
+            trade
+            for trade in closed_trades
+            if trade.pnl > 0
         ]
 
         losing_trades = [
@@ -392,14 +396,16 @@ async def self_learning_handler(message: Message) -> None:
 
         total_pnl = sum(trade.pnl for trade in closed_trades)
         total_confidence = sum(
-        trade.confidence_score
-        for trade in real_trades
+            trade.confidence_score
+            for trade in real_trades
         )
+
         average_confidence = (
-        total_confidence / total_trades
-        if total_trades > 0
-        else 0
+            total_confidence / total_trades
+            if total_trades > 0
+            else 0
         )
+
         if closed_count > 0:
             win_rate = profitable_count / closed_count * 100
             average_pnl = total_pnl / closed_count
@@ -410,6 +416,7 @@ async def self_learning_handler(message: Message) -> None:
             average_pnl = 0
             best_pnl = 0
             worst_pnl = 0
+
         result = await session.execute(
             select(AutoSignalLog)
         )
@@ -450,10 +457,11 @@ async def self_learning_handler(message: Message) -> None:
         else:
             avg_signal_confidence = 0
             last_signal_text = "Нет данных"
+
         await message.answer(
             "🧠 Самообучение 3.0\n\n"
             "📈 Сделки\n"
-            f"📊 Всего сделок: {total_trades}\n"
+            f"📊 Всего новых сделок: {total_trades}\n"
             f"🟢 Открытых: {open_count}\n"
             f"✅ Закрытых: {closed_count}\n"
             f"🏆 Прибыльных: {profitable_count}\n"
@@ -471,15 +479,14 @@ async def self_learning_handler(message: Message) -> None:
             f"🟡 HOLD / WAIT: {hold_signals}\n"
             f"Средняя уверенность: {avg_signal_confidence:.2f}%\n"
             f"Последний сигнал: {last_signal_text}\n\n"
-            "Бот уже сравнивает сделки и авто-сигналы "
-            "для подготовки к будущей автоторговле."
+            "Старые тестовые сделки LEGACY_TEST_TRADE "
+            "исключены из статистики."
         )
+
 
 @router.message(lambda message: message.text == "🔔 Авто-сигналы")
 async def auto_signals_handler(message: Message) -> None:
-
     async with get_session() as session:
-
         result = await session.execute(
             select(User).where(
                 User.telegram_id == message.from_user.id
@@ -489,9 +496,7 @@ async def auto_signals_handler(message: Message) -> None:
         user = result.scalar_one_or_none()
 
         if user is None:
-            await message.answer(
-                "Пользователь не найден."
-            )
+            await message.answer("Пользователь не найден.")
             return
 
         result = await session.execute(
@@ -503,7 +508,6 @@ async def auto_signals_handler(message: Message) -> None:
         settings = result.scalar_one_or_none()
 
         if settings is None:
-
             settings = UserSettings(
                 user_id=user.id,
                 auto_signals_enabled=True,
@@ -512,7 +516,6 @@ async def auto_signals_handler(message: Message) -> None:
             session.add(settings)
 
         else:
-
             settings.auto_signals_enabled = not settings.auto_signals_enabled
 
         status = (
@@ -527,16 +530,16 @@ async def auto_signals_handler(message: Message) -> None:
         "Теперь бот будет использовать эту настройку "
         "для будущих автоматических уведомлений по BTC."
     )
+
+
 @router.message(lambda message: message.text == "🔔 Проверить сигнал")
 async def check_signal_handler(message: Message) -> None:
-
     analysis = await get_btc_market_analysis()
 
     signal = analysis["signal"]
     confidence = analysis["confidence"]
 
-    if signal == "BUY" and confidence >= 70:
-
+    if "BUY" in signal and confidence >= 70:
         await message.answer(
             "🟢 Сильный сигнал BTC\n\n"
             f"Цена: {analysis['last_price']:.2f} USDT\n"
@@ -544,8 +547,7 @@ async def check_signal_handler(message: Message) -> None:
             f"{analysis['recommendation']}"
         )
 
-    elif signal == "SELL" and confidence >= 70:
-
+    elif "SELL" in signal and confidence >= 70:
         await message.answer(
             "🔴 Сильный сигнал BTC\n\n"
             f"Цена: {analysis['last_price']:.2f} USDT\n"
@@ -554,7 +556,6 @@ async def check_signal_handler(message: Message) -> None:
         )
 
     else:
-
         await message.answer(
             "🟡 Сильного сигнала сейчас нет.\n\n"
             f"Текущий сигнал: {signal}\n"
@@ -564,9 +565,7 @@ async def check_signal_handler(message: Message) -> None:
 
 @router.message(lambda message: message.text == "📊 Статистика сигналов")
 async def signal_stats_handler(message: Message) -> None:
-
     async with get_session() as session:
-
         result = await session.execute(
             select(AutoSignalLog)
         )
@@ -617,9 +616,9 @@ async def signal_stats_handler(message: Message) -> None:
             f"Цена: {last_signal.price:.2f} USDT"
         )
 
+
 @router.message(lambda message: message.text == "⚙️ Настройки")
 async def settings_handler(message: Message) -> None:
-
     await message.answer(
         "⚙️ Модуль настроек находится в разработке."
     )
