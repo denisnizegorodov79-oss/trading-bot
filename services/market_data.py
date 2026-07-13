@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import aiohttp
-
+from services.trading_engine import make_trading_decision
 
 async def get_btc_price() -> float:
     url = "https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT"
@@ -111,24 +111,17 @@ async def get_btc_market_analysis() -> dict:
     position_size = (
     risk_amount /
     abs(last_price - stop_loss)
-)
+    )
     
-    if rsi < 35 and ema20 > ema50:
-        signal = "BUY 🟢"
-        confidence = 75
-        recommendation = "Цена выглядит перепроданной, тренд поддерживает покупку."
-    elif rsi > 70:
-        signal = "SELL / WAIT 🔴"
-        confidence = 70
-        recommendation = "RSI высокий, возможна коррекция."
-    elif ema20 > ema50:
-        signal = "HOLD / BUY осторожно 🟡"
-        confidence = 60
-        recommendation = "Тренд восходящий, но сильного сигнала нет."
-    else:
-        signal = "WAIT ⚪"
-        confidence = 50
-        recommendation = "Лучше дождаться более сильного сигнала."
+    decision = make_trading_decision(
+        rsi=rsi,
+        ema20=ema20,
+        ema50=ema50,
+    )
+
+    signal = decision["signal"]
+    confidence = decision["confidence"]
+    recommendation = decision["recommendation"]
 
     return {
         "last_price": last_price,
