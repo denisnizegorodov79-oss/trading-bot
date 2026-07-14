@@ -38,7 +38,64 @@ def calculate_ema(prices: list[float], period: int) -> float:
         ema = (price - ema) * multiplier + ema
 
     return ema
+def calculate_ema_series(
+    prices: list[float],
+    period: int,
+) -> list[float]:
+    if not prices:
+        return []
 
+    multiplier = 2 / (period + 1)
+    ema_values = [prices[0]]
+
+    for price in prices[1:]:
+        next_ema = (
+            (price - ema_values[-1]) * multiplier
+            + ema_values[-1]
+        )
+
+        ema_values.append(next_ema)
+
+    return ema_values
+
+
+def calculate_macd(
+    prices: list[float],
+    fast_period: int = 12,
+    slow_period: int = 26,
+    signal_period: int = 9,
+) -> tuple[float, float, float]:
+    if len(prices) < slow_period + signal_period:
+        return 0.0, 0.0, 0.0
+
+    fast_ema = calculate_ema_series(
+        prices,
+        fast_period,
+    )
+
+    slow_ema = calculate_ema_series(
+        prices,
+        slow_period,
+    )
+
+    macd_values = [
+        fast_value - slow_value
+        for fast_value, slow_value in zip(
+            fast_ema,
+            slow_ema,
+        )
+    ]
+
+    signal_values = calculate_ema_series(
+        macd_values,
+        signal_period,
+    )
+
+    macd = macd_values[-1]
+    macd_signal = signal_values[-1]
+    macd_histogram = macd - macd_signal
+
+    return macd, macd_signal, macd_histogram
 
 def calculate_rsi(prices: list[float], period: int = 14) -> float:
     gains = []
