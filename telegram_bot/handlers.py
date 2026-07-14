@@ -71,8 +71,6 @@ async def analysis_handler(message: Message) -> None:
             f"📊 Объём 24ч: {analysis['volume_24h']:.2f} USDT\n\n"
             f"RSI: {analysis['rsi']:.2f}\n"
             f"EMA20: {analysis['ema20']:.2f}\n"
-            f"RSI: {analysis['rsi']:.2f}\n"
-            f"EMA20: {analysis['ema20']:.2f}\n"
             f"EMA50: {analysis['ema50']:.2f}\n"
             f"MACD: {analysis['macd']:.2f}\n"
             f"MACD Signal: {analysis['macd_signal']:.2f}\n"
